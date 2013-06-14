@@ -1,2 +1,2 @@
-a DartNet implemented by a nju cser  
-course url, http://www.cs.dartmouth.edu/~campbell/cs60/
+A DartNet implemented by a nju cser  
+Course URL http://www.cs.dartmouth.edu/~campbell/cs60/

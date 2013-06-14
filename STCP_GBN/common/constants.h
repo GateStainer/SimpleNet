@@ -8,7 +8,7 @@
 #define CONSTANTS_H
 
 //服务器打开的重叠网络层端口号. 客户端将连接到这个端口. 你应该选择一个随机的端口以避免和其他同学发生冲突.
-#define SON_PORT 9009
+#define SON_PORT 9042
 //这是STCP可以支持的最大连接数. 你的TCB表应包含MAX_TRANSPORT_CONNECTIONS个条目.
 #define MAX_TRANSPORT_CONNECTIONS 10
 //最大段长度

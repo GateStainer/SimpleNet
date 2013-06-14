@@ -1,0 +1,63 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+ACCEPT_POLLING_INTERVAL	constants.h	34;"	d
+CLOSEWAIT_TIMEOUT	constants.h	28;"	d
+CONSTANTS_H	constants.h	8;"	d
+DATA	seg.h	18;"	d
+DATAACK	seg.h	19;"	d
+DATA_TIMEOUT	constants.h	38;"	d
+FIN	seg.h	16;"	d
+FINACK	seg.h	17;"	d
+FIN_MAX_RETRY	constants.h	26;"	d
+FIN_TIMEOUT	constants.h	22;"	d
+GBN_WINDOW	constants.h	40;"	d
+MAX_SEG_LEN	constants.h	16;"	d
+MAX_TRANSPORT_CONNECTIONS	constants.h	13;"	d
+PKT_LOSS_RATE	constants.h	18;"	d
+RECEIVE_BUF_SIZE	constants.h	36;"	d
+RECVBUF_POLLING_INTERVAL	constants.h	32;"	d
+SEG_H	seg.h	9;"	d
+SENDBUF_POLLING_INTERVAL	constants.h	30;"	d
+SON_PORT	constants.h	11;"	d
+SYN	seg.h	14;"	d
+SYNACK	seg.h	15;"	d
+SYN_MAX_RETRY	constants.h	24;"	d
+SYN_TIMEOUT	constants.h	20;"	d
+ack_num	seg.h	/^	unsigned int ack_num;         \/\/确认号$/;"	m	struct:stcp_hdr	access:public
+checkchecksum	seg.c	/^int checkchecksum(seg_t* segment)$/;"	f	signature:(seg_t* segment)
+checkchecksum	seg.h	/^int checkchecksum(seg_t* segment);$/;"	p	signature:(seg_t* segment)
+checksum	seg.c	/^unsigned short checksum(seg_t* segment)$/;"	f	signature:(seg_t* segment)
+checksum	seg.h	/^	unsigned short int checksum;  \/\/这个段的校验和$/;"	m	struct:stcp_hdr	access:public
+checksum	seg.h	/^unsigned short checksum(seg_t* segment);$/;"	p	signature:(seg_t* segment)
+data	seg.h	/^	char data[MAX_SEG_LEN];$/;"	m	struct:segment	access:public
+dest_port	seg.h	/^	unsigned int dest_port;       \/\/目的端口号$/;"	m	struct:stcp_hdr	access:public
+header	seg.h	/^	stcp_hdr_t header;$/;"	m	struct:segment	access:public
+length	seg.h	/^	unsigned short int length;    \/\/段数据长度$/;"	m	struct:stcp_hdr	access:public
+rcv_win	seg.h	/^	unsigned short int  rcv_win;  \/\/当前未使用$/;"	m	struct:stcp_hdr	access:public
+seg_t	seg.h	/^} seg_t;$/;"	t	typeref:struct:segment
+seglost	seg.c	/^int seglost(seg_t* segPtr) {$/;"	f	signature:(seg_t* segPtr)
+seglost	seg.h	/^int seglost(seg_t* segPtr); $/;"	p	signature:(seg_t* segPtr)
+segment	seg.h	/^typedef struct segment {$/;"	s
+segment::data	seg.h	/^	char data[MAX_SEG_LEN];$/;"	m	struct:segment	access:public
+segment::header	seg.h	/^	stcp_hdr_t header;$/;"	m	struct:segment	access:public
+seq_num	seg.h	/^	unsigned int seq_num;         \/\/序号$/;"	m	struct:stcp_hdr	access:public
+sip_recvseg	seg.c	/^int sip_recvseg(int connection, seg_t* segPtr)$/;"	f	signature:(int connection, seg_t* segPtr)
+sip_recvseg	seg.h	/^int sip_recvseg(int connection, seg_t* segPtr);$/;"	p	signature:(int connection, seg_t* segPtr)
+sip_sendseg	seg.c	/^int sip_sendseg(int connection, seg_t* segPtr)$/;"	f	signature:(int connection, seg_t* segPtr)
+sip_sendseg	seg.h	/^int sip_sendseg(int connection, seg_t* segPtr);$/;"	p	signature:(int connection, seg_t* segPtr)
+src_port	seg.h	/^	unsigned int src_port;        \/\/源端口号$/;"	m	struct:stcp_hdr	access:public
+stcp_hdr	seg.h	/^typedef struct stcp_hdr {$/;"	s
+stcp_hdr::ack_num	seg.h	/^	unsigned int ack_num;         \/\/确认号$/;"	m	struct:stcp_hdr	access:public
+stcp_hdr::checksum	seg.h	/^	unsigned short int checksum;  \/\/这个段的校验和$/;"	m	struct:stcp_hdr	access:public
+stcp_hdr::dest_port	seg.h	/^	unsigned int dest_port;       \/\/目的端口号$/;"	m	struct:stcp_hdr	access:public
+stcp_hdr::length	seg.h	/^	unsigned short int length;    \/\/段数据长度$/;"	m	struct:stcp_hdr	access:public
+stcp_hdr::rcv_win	seg.h	/^	unsigned short int  rcv_win;  \/\/当前未使用$/;"	m	struct:stcp_hdr	access:public
+stcp_hdr::seq_num	seg.h	/^	unsigned int seq_num;         \/\/序号$/;"	m	struct:stcp_hdr	access:public
+stcp_hdr::src_port	seg.h	/^	unsigned int src_port;        \/\/源端口号$/;"	m	struct:stcp_hdr	access:public
+stcp_hdr::type	seg.h	/^	unsigned short int  type;     \/\/段类型$/;"	m	struct:stcp_hdr	access:public
+stcp_hdr_t	seg.h	/^} stcp_hdr_t;$/;"	t	typeref:struct:stcp_hdr
+type	seg.h	/^	unsigned short int  type;     \/\/段类型$/;"	m	struct:stcp_hdr	access:public

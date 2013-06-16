@@ -2,6 +2,8 @@
 #define PKT_H
 
 #include "constants.h"
+#include "sys/socket.h"
+#include "string.h"
 
 //报文类型定义, 用于报文首部中的type字段
 #define	ROUTE_UPDATE 1

@@ -33,6 +33,11 @@ int topology_getMyNodeID();
 //返回邻居数.
 int topology_getNbrNum(); 
 
+//返回小于本节点的邻居数
+int topology_getLessNum();
+
+//返回大于本节点的邻居数
+int topology_getGreatNum();
 //这个函数解析保存在文件topology.dat中的拓扑信息.
 //返回重叠网络中的总节点数. 
 int topology_getNodeNum();
@@ -51,5 +56,6 @@ in_addr_t *topology_getNbrIpArray();
 //如果指定两个节点之间没有直接链路, 返回INFINITE_COST.
 unsigned int topology_getCost(int fromNodeID, int toNodeID);
 
+//解析拓扑信息
 void topology_analysis();
 #endif

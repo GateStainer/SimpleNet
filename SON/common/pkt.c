@@ -10,7 +10,15 @@
 // 如果发送成功, 返回1, 否则返回-1.
 int son_sendpkt(int nextNodeID, sip_pkt_t* pkt, int son_conn)
 {
-  return 0;
+	char begin[] = "!&";
+	char end[] = "!#";
+	sendpkt_arg_t sendbuf;
+	sendbuf.nextNodeID = nextNodeID;
+	sendbuf.pkt = *pkt;
+	send(son_conn, &begin, 2, 0);
+	send(son_conn, &sendbuf, sizeof sendbuf, 0);
+	send(son_conn, &end, 2, 0);
+	return 1;
 }
 
 // son_recvpkt()函数由SIP进程调用, 其作用是接收来自SON进程的报文. 
@@ -23,7 +31,47 @@ int son_sendpkt(int nextNodeID, sip_pkt_t* pkt, int son_conn)
 // 如果成功接收报文, 返回1, 否则返回-1.
 int son_recvpkt(sip_pkt_t* pkt, int son_conn)
 {
-  return 0;
+	enum {PKTSTART1, PKTSTART2, PKTRECV, PKTSTOP1, PKTSTOP2} state;
+	state = PKTSTART1;
+	char buf;
+	char *recvbuf = (char *)pkt;
+	int i = 0, n;
+
+	while( (n = recv(son_conn, &buf, 1, 0)) > 0){
+		switch(state){
+			case PKTSTART1:
+				if(buf == '!')
+					state = PKTSTART2;
+				break;
+			case PKTSTART2:
+				if(buf == '&')
+					state = PKTRECV;
+				else
+					state = PKTSTART1;
+				break;
+			case PKTRECV:
+				if(buf != '!')
+					recvbuf[i++] = buf;
+				else
+					state = PKTSTOP1;
+				break;
+			case PKTSTOP1:
+				if(buf == '#')
+					state = PKTSTOP2;
+				else{
+					recvbuf[i++] = '!';
+					recvbuf[i++] = buf;
+					state = PKTRECV;
+				}
+				break;
+		}
+		if(state == PKTSTOP2)
+			break;
+	}
+	
+	if(n <= 0)
+		return -1;
+	return 1;
 }
 
 // 这个函数由SON进程调用, 其作用是接收数据结构sendpkt_arg_t.
@@ -38,7 +86,51 @@ int son_recvpkt(sip_pkt_t* pkt, int son_conn)
 // 如果成功接收sendpkt_arg_t结构, 返回1, 否则返回-1.
 int getpktToSend(sip_pkt_t* pkt, int* nextNode,int sip_conn)
 {
-  return 0;
+	enum {PKTSTART1, PKTSTART2, PKTRECV, PKTSTOP1, PKTSTOP2} state;
+	state = PKTSTART1;
+	char buf;
+	sendpkt_arg_t buffer;
+	char *recvbuf = (char *)&buffer;
+	int i = 0, n;
+
+	while( (n = recv(sip_conn, &buf, 1, 0)) > 0){
+		switch(state){
+			case PKTSTART1:
+				if(buf == '!')
+					state = PKTSTART2;
+				break;
+			case PKTSTART2:
+				if(buf == '&')
+					state = PKTRECV;
+				else
+					state = PKTSTART1;
+				break;
+			case PKTRECV:
+				if(buf != '!')
+					recvbuf[i++] = buf;
+				else
+					state = PKTSTOP1;
+				break;
+			case PKTSTOP1:
+				if(buf == '#')
+					state = PKTSTOP2;
+				else{
+					recvbuf[i++] = '!';
+					recvbuf[i++] = buf;
+					state = PKTRECV;
+				}
+				break;
+		}
+		if(state == PKTSTOP2)
+			break;
+	}
+	
+	memcpy(pkt, &(buffer.pkt), sizeof (sip_pkt_t));
+	*nextNode = buffer.nextNodeID;
+
+	if(n <= 0)
+		return -1;
+	return 1;
 }
 
 // forwardpktToSIP()函数是在SON进程接收到来自重叠网络中其邻居的报文后被调用的. 
@@ -48,8 +140,14 @@ int getpktToSend(sip_pkt_t* pkt, int* nextNode,int sip_conn)
 // 如果报文发送成功, 返回1, 否则返回-1.
 int forwardpktToSIP(sip_pkt_t* pkt, int sip_conn)
 {
-  return 0;
+	char begin[] = "!&";
+	char end[] = "!#";
+	send(sip_conn, &begin, 2, 0);
+	send(sip_conn, pkt, sizeof (sip_pkt_t), 0);
+	send(sip_conn, &end, 2, 0);
+	return 1;
 }
+
 
 // sendpkt()函数由SON进程调用, 其作用是将接收自SIP进程的报文发送给下一跳.
 // 参数conn是到下一跳节点的TCP连接的套接字描述符.
@@ -57,7 +155,12 @@ int forwardpktToSIP(sip_pkt_t* pkt, int sip_conn)
 // 如果报文发送成功, 返回1, 否则返回-1.
 int sendpkt(sip_pkt_t* pkt, int conn)
 {
-  return 0;
+	char begin[] = "!&";
+	char end[] = "!#";
+	send(conn, &begin, 2, 0);
+	send(conn, pkt, sizeof (sip_pkt_t), 0);
+	send(conn, &end, 2, 0);
+	return 1;
 }
 
 // recvpkt()函数由SON进程调用, 其作用是接收来自重叠网络中其邻居的报文.
@@ -71,5 +174,45 @@ int sendpkt(sip_pkt_t* pkt, int conn)
 // 如果成功接收报文, 返回1, 否则返回-1.
 int recvpkt(sip_pkt_t* pkt, int conn)
 {
-  return 0;
+	enum {PKTSTART1, PKTSTART2, PKTRECV, PKTSTOP1, PKTSTOP2} state;
+	state = PKTSTART1;
+	char buf;
+	char *recvbuf = (char *)pkt;
+	int i = 0, n;
+
+	while( (n = recv(conn, &buf, 1, 0)) > 0){
+		switch(state){
+			case PKTSTART1:
+				if(buf == '!')
+					state = PKTSTART2;
+				break;
+			case PKTSTART2:
+				if(buf == '&')
+					state = PKTRECV;
+				else
+					state = PKTSTART1;
+				break;
+			case PKTRECV:
+				if(buf != '!')
+					recvbuf[i++] = buf;
+				else
+					state = PKTSTOP1;
+				break;
+			case PKTSTOP1:
+				if(buf == '#')
+					state = PKTSTOP2;
+				else{
+					recvbuf[i++] = '!';
+					recvbuf[i++] = buf;
+					state = PKTRECV;
+				}
+				break;
+		}
+		if(state == PKTSTOP2)
+			break;
+	}
+	
+	if(n <= 0)
+		return -1;
+	return 1;
 }

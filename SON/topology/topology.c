@@ -11,11 +11,12 @@
 //例如, 一个节点的IP地址为202.119.32.12, 它的节点ID就是12.
 //如果不能获取节点ID, 返回-1.
 
-int *nbrIDArray;
-in_addr_t *nbrIPArray;
-int *nodeArray;
-int nbrNum = 0;
-int nodeNum = 0;
+static int *nbrIDArray;
+static in_addr_t *nbrIPArray;
+static int *nodeArray;
+static int nbrNum = 0;
+static int nodeNum = 0;
+static int lessNbr = 0;
 
 int searchInArray(int a[], int key, int num)
 {
@@ -62,28 +63,34 @@ int topology_getMyNodeID()
 	return topology_getNodeIDfromname(localhostname);
 }
 
-//这个函数解析保存在文件topology.dat中的拓扑信息.
 //返回邻居数.
 int topology_getNbrNum()
 {
 	return nbrNum;
 }
 
-//这个函数解析保存在文件topology.dat中的拓扑信息.
+int topology_getLessNum()
+{
+	return lessNbr;
+}
+
+int topology_getGreatNum()
+{
+	return nbrNum - lessNbr;
+}
+
 //返回重叠网络中的总节点数.
 int topology_getNodeNum()
 { 
 	return nodeNum;
 }
 
-//这个函数解析保存在文件topology.dat中的拓扑信息.
 //返回一个动态分配的数组, 它包含重叠网络中所有节点的ID. 
 int* topology_getNodeArray()
 {
 	return nodeArray;
 }
 
-//这个函数解析保存在文件topology.dat中的拓扑信息.
 //返回一个动态分配的数组, 它包含所有邻居的节点ID.  
 int* topology_getNbrArray()
 {
@@ -94,7 +101,6 @@ in_addr_t *topology_getNbrIpArray()
 {
 	return nbrIPArray;
 }
-//这个函数解析保存在文件topology.dat中的拓扑信息.
 //返回指定两个节点之间的直接链路代价. 
 //如果指定两个节点之间没有直接链路, 返回INFINITE_COST.
 unsigned int topology_getCost(int fromNodeID, int toNodeID)
@@ -136,11 +142,15 @@ void topology_analysis()
 			nbr[nbrNum] = host2ID;
 			nip[nbrNum] = host2IP;
 			nbrNum++;
+			if(host2ID < myNodeID)
+				lessNbr++;
 		}
 		else if(host2ID == myNodeID){
 			nbr[nbrNum] = host1ID;
 			nip[nbrNum] = host1IP;
 			nbrNum++;
+			if(host1ID < myNodeID)
+				lessNbr++;
 		}
 		if(searchInArray(node, host1ID, nodeNum) == -1){
 			node[nodeNum] = host1ID;
@@ -171,7 +181,7 @@ void topology_analysis()
 }
 
 #ifdef DEBUG
-int main()
+int debugTopology()
 {
 	topology_analysis();
 	printf("nbr :%d node %d \n", topology_getNbrNum(), topology_getNodeNum());

@@ -7,6 +7,7 @@
 #ifndef NEIGHBORTABLE_H 
 #define NEIGHBORTABLE_H
 #include <arpa/inet.h>
+#include <../topology/topology.h>
 
 //邻居表条目定义
 //一张邻居表包含n个条目, 其中n是邻居的数量
@@ -29,4 +30,5 @@ void nt_destroy(nbr_entry_t* nt);
 //这个函数为邻居表中指定的邻居节点条目分配一个TCP连接. 如果分配成功, 返回1, 否则返回-1.
 int nt_addconn(nbr_entry_t* nt, int nodeID, int conn);
 
+int nt_addconnByIP(nbr_entry_t* nt, in_addr_t nodeIP, int conn);
 #endif

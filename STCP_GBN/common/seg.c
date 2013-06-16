@@ -32,8 +32,8 @@
 //
 int sip_sendseg(int connection, seg_t* segPtr)
 {	
-	char begin[] = "!@";
-	char end[] = "!$";
+	char begin[] = "!&";
+	char end[] = "!#";
 	send(connection, &begin, 2, 0);
 	segPtr->header.checksum = 0;
 	segPtr->header.checksum = checksum(segPtr);
@@ -76,7 +76,7 @@ int sip_recvseg(int connection, seg_t* segPtr)
 					state = SEGSTART2;
 				break;
 			case SEGSTART2:
-				if(buf == '@')
+				if(buf == '&')
 					state = SEGRECV;
 				else
 					state = SEGSTART1;
@@ -88,7 +88,7 @@ int sip_recvseg(int connection, seg_t* segPtr)
 					state = SEGSTOP1;
 				break;
 			case SEGSTOP1:
-				if(buf == '$')
+				if(buf == '#')
 					state = SEGSTOP2;
 				else{
 					recvbuf[i++] = '!';

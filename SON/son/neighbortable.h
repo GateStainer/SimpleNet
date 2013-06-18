@@ -7,7 +7,7 @@
 #ifndef NEIGHBORTABLE_H 
 #define NEIGHBORTABLE_H
 #include <arpa/inet.h>
-#include <../topology/topology.h>
+#include "../topology/topology.h"
 
 //邻居表条目定义
 //一张邻居表包含n个条目, 其中n是邻居的数量
@@ -31,4 +31,5 @@ void nt_destroy(nbr_entry_t* nt);
 int nt_addconn(nbr_entry_t* nt, int nodeID, int conn);
 
 int nt_addconnByIP(nbr_entry_t* nt, in_addr_t nodeIP, int conn);
+int nt_getconn(nbr_entry_t *nt, int nodeID);
 #endif

@@ -27,7 +27,7 @@
 #include "neighbortable.h"
 
 //你应该在这个时间段内启动所有重叠网络节点上的SON进程
-#define SON_START_DELAY 60
+#define SON_START_DELAY 30
 
 /**************************************************************/
 //声明全局变量
@@ -54,22 +54,32 @@ void* waitNbrs(void* arg)
 		perror("error in creating the socket");
 		exit(2);
 	}
-
+	int opt = 1;
+	setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 	memset(&servaddr,0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(CONNECTION_PORT);
 	bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
 	listen(listenfd, LISTENQ);
-	printf("Server running...waiting for TCP connection.\n");
+	printf("in waitNbrs running...waiting for SON neighbor great than me to connect.\n");
 
 	int i;
 	int listenNum = topology_getGreatNum();
 	for(i = 0; i < listenNum; i++){
+		memset(&cliaddr, 0, sizeof(cliaddr));
+		clilen = sizeof(cliaddr);
 		connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
+		if(connfd == -1)
+			printf("error when neighbor connect\n");
+		else
+			printf("waitNbrs : %d \n", connfd);
 		in_addr_t client_ip = cliaddr.sin_addr.s_addr;
-		nt_addconnByIP(nt, client_ip, connfd);
+		if(nt_addconnByIP(nt, client_ip, connfd) == -1)
+			printf("can't add connByIP \n");
+		printf("neighbor %d connected to me\n", (unsigned char)ntohl(client_ip));
 	}
+
 
 	close(listenfd);
 	pthread_exit(NULL);
@@ -94,10 +104,15 @@ int connectNbrs()
 			servaddr.sin_family = AF_INET;
 			servaddr.sin_addr.s_addr = nt[i].nodeIP;
 			servaddr.sin_port = htons(CONNECTION_PORT);
+			printf("SON: try to connect neighbor %d \n", nt[i].nodeID);
 			if(connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0){
-				printf("Can Not establish SON network\n");
+				printf("Can Not establish SON network to neighbor less than me\n");
 				return -1;
 			}
+
+			if(nt_addconnByIP(nt, nt[i].nodeIP, sockfd) == -1)
+				printf("can't addconn in nt\n");
+			printf("connect to neighbor %d \n", nt[i].nodeID);
 		}
 	}
 	return 1;
@@ -114,10 +129,19 @@ void* listen_to_neighbor(void* arg)
 	//when to exit?
 	while(1){
 		sip_pkt_t recvbuf;
-		if(recvpkt(&recvbuf, connfd) == -1)
+		printf("listen_to_neighbor %d here\n", nt[i].nodeID);
+		if(recvpkt(&recvbuf, connfd) == -1){
+			printf("son: failed to recv pkt from neighbor %d\n", nt[i].nodeID);
 			break;
-		if(forwardpktToSIP(&recvbuf, sip_conn) == -1)
-			break;
+		}
+		printf("son: recv pkt from neighbor %d \n", nt[i].nodeID);
+		if(forwardpktToSIP(&recvbuf, sip_conn) == -1){
+			printf("son: can't forward pkt to SIP \n");
+			// sip start later than listen to, you can't break here!!!!!!!
+//			break; 
+		}
+//		forwardpktToSIP(&recvbuf, sip_conn);
+		printf("son: forward pkt from to SIP\n");
 	}
 	pthread_exit(NULL);
 }
@@ -136,18 +160,42 @@ void waitSIP()
 		exit(2);
 	}
 
+	int opt = 1;
+	setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	clilen = sizeof(cliaddr);
 	memset(&servaddr,0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(SON_PORT);
 	bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
 	listen(listenfd, LISTENQ);
-	printf("Server running...waiting for TCP connection.\n");
+	printf("son running...waiting for SIP connection.\n");
 	sip_conn = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
 	close(listenfd);
 
+	int i;
+	while(1){
+		sip_pkt_t recvbuf;
+		int nextNode;
+		int nbrNum = topology_getNbrNum();
+		if(getpktToSend(&recvbuf, &nextNode, sip_conn) == -1)
+			break;
+		printf("son: get pkt To send \n");
+		if(nextNode == BROADCAST_NODEID){
+			for(i = 0; i < nbrNum; i++){
+				if(sendpkt(&recvbuf, nt[i].conn) == -1){
+					printf("son: can't send pkt to neighbor %d \n", nt[i].nodeID);
+					printf("son: the connfd is %d \n", nt[i].conn);
+				}
+				else
+					printf("son send pkt to neighbor %d \n", nt[i].nodeID);
+			}
+		}
+		else{
+			sendpkt(&recvbuf, nt_getconn(nt, nextNode));
+		}
 
-
+	}
 
 }
 
@@ -155,7 +203,9 @@ void waitSIP()
 //它关闭所有的连接, 释放所有动态分配的内存.
 void son_stop() 
 {
-	//你需要编写这里的代码.
+	close(sip_conn);
+	nt_destroy(nt);
+	exit(0);
 }
 
 int main() 

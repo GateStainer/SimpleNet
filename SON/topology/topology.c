@@ -32,7 +32,7 @@ int topology_getNodeIDfromname(char* hostname)
 	struct hostent *h = gethostbyname(hostname);
 	if(h == NULL)
 		return -1;
-	unsigned char node_id = ntohl(((struct in_addr *)h->h_addr)->s_addr);
+	unsigned char node_id = ntohl(((struct in_addr *)h->h_addr_list[0])->s_addr);
 	return node_id;
 }
 
@@ -42,7 +42,7 @@ in_addr_t topology_getNodeIPfromname(char *hostname)
 	if(h == NULL)
 		return -1;
 	//network order
-	in_addr_t node_ip =((struct in_addr *)h->h_addr)->s_addr;
+	in_addr_t node_ip =((struct in_addr *)h->h_addr_list[0])->s_addr;
 	return node_ip;
 }
 
@@ -107,7 +107,7 @@ unsigned int topology_getCost(int fromNodeID, int toNodeID)
 {
 	char host1[20], host2[20];
 	int cost, host1ID, host2ID;
-	FILE *pFile = fopen("topology.dat", "r");
+	FILE *pFile = fopen("../topology/topology.dat", "r");
 	if(pFile == NULL)
 		perror("Error opening topology");
 	while(fscanf(pFile,"%s %s %d", host1, host2, &cost) > 0){
@@ -129,7 +129,7 @@ void topology_analysis()
 	int node[20], nbr[20];
 	in_addr_t nip[20];
 	int myNodeID = topology_getMyNodeID();
-	FILE *pFile = fopen("topology.dat", "r");
+	FILE *pFile = fopen("../topology/topology.dat", "r");
 	if(pFile == NULL)
 		perror("Error opening topology");
 	while(fscanf(pFile,"%s %s %d", host1, host2, &cost) > 0){
@@ -168,7 +168,7 @@ void topology_analysis()
 	for(i = 0; i < nbrNum; i++)
 		nbrIDArray[i] = nbr[i];
 
-	nbrIPArray = (int *)malloc(nbrNum * sizeof (int));
+	nbrIPArray = (in_addr_t *)malloc(nbrNum * sizeof (in_addr_t));
 	for(i = 0; i < nbrNum; i++)
 		nbrIPArray[i] = nip[i];
 

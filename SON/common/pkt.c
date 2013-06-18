@@ -2,6 +2,7 @@
 // 创建日期: 2013年1月
 
 #include "pkt.h"
+#include "stdio.h"
 
 // son_sendpkt()由SIP进程调用, 其作用是要求SON进程将报文发送到重叠网络中. SON进程和SIP进程通过一个本地TCP连接互连.
 // 在son_sendpkt()中, 报文及其下一跳的节点ID被封装进数据结构sendpkt_arg_t, 并通过TCP连接发送给SON进程. 
@@ -15,9 +16,12 @@ int son_sendpkt(int nextNodeID, sip_pkt_t* pkt, int son_conn)
 	sendpkt_arg_t sendbuf;
 	sendbuf.nextNodeID = nextNodeID;
 	sendbuf.pkt = *pkt;
-	send(son_conn, &begin, 2, 0);
-	send(son_conn, &sendbuf, sizeof sendbuf, 0);
-	send(son_conn, &end, 2, 0);
+	if(send(son_conn, &begin, 2, 0) == -1)
+		return -1;
+	if(send(son_conn, &sendbuf, sizeof sendbuf, 0) == -1)
+		return -1;
+	if(send(son_conn, &end, 2, 0) == -1)
+		return -1;
 	return 1;
 }
 
@@ -63,6 +67,8 @@ int son_recvpkt(sip_pkt_t* pkt, int son_conn)
 					recvbuf[i++] = buf;
 					state = PKTRECV;
 				}
+				break;
+			case PKTSTOP2:
 				break;
 		}
 		if(state == PKTSTOP2)
@@ -120,6 +126,8 @@ int getpktToSend(sip_pkt_t* pkt, int* nextNode,int sip_conn)
 					state = PKTRECV;
 				}
 				break;
+			case PKTSTOP2:
+				break;
 		}
 		if(state == PKTSTOP2)
 			break;
@@ -142,9 +150,18 @@ int forwardpktToSIP(sip_pkt_t* pkt, int sip_conn)
 {
 	char begin[] = "!&";
 	char end[] = "!#";
-	send(sip_conn, &begin, 2, 0);
-	send(sip_conn, pkt, sizeof (sip_pkt_t), 0);
-	send(sip_conn, &end, 2, 0);
+	if(send(sip_conn, &begin, 2, 0) == -1){
+		perror("can't send !&");
+		return -1;
+	}
+	if(send(sip_conn, pkt, sizeof (sip_pkt_t), 0) == -1){
+		printf("can't send sip_pkt_t \n");
+		return -1;
+	}
+	if(send(sip_conn, &end, 2, 0) == -1){
+		printf("can't send !# \n");
+		return -1;
+	}
 	return 1;
 }
 
@@ -157,9 +174,12 @@ int sendpkt(sip_pkt_t* pkt, int conn)
 {
 	char begin[] = "!&";
 	char end[] = "!#";
-	send(conn, &begin, 2, 0);
-	send(conn, pkt, sizeof (sip_pkt_t), 0);
-	send(conn, &end, 2, 0);
+	if(send(conn, &begin, 2, 0) == -1)
+		return -1;
+	if(send(conn, pkt, sizeof (sip_pkt_t), 0) == -1)
+		return -1;
+	if(send(conn, &end, 2, 0) == -1)
+		return -1;
 	return 1;
 }
 
@@ -180,6 +200,8 @@ int recvpkt(sip_pkt_t* pkt, int conn)
 	char *recvbuf = (char *)pkt;
 	int i = 0, n;
 
+	printf("before recvpkt \n");
+	printf("conn : %d \n", conn);
 	while( (n = recv(conn, &buf, 1, 0)) > 0){
 		switch(state){
 			case PKTSTART1:
@@ -207,11 +229,14 @@ int recvpkt(sip_pkt_t* pkt, int conn)
 					state = PKTRECV;
 				}
 				break;
+			case PKTSTOP2:
+				break;
 		}
 		if(state == PKTSTOP2)
 			break;
 	}
 	
+	printf("after recvpkt \n");
 	if(n <= 0)
 		return -1;
 	return 1;

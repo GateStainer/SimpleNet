@@ -34,23 +34,50 @@ int son_conn; 		//到重叠网络的连接
 
 //SIP进程使用这个函数连接到本地SON进程的端口SON_PORT
 //成功时返回连接描述符, 否则返回-1
-int connectToSON() { 
-	//你需要编写这里的代码.
-  return 0;
+int connectToSON() 
+{ 
+	if((son_conn = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+		printf("error in creating socket\n");
+		return -1;
+	}
+
+	struct sockaddr_in servaddr;
+	memset(&servaddr, 0, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	servaddr.sin_port = htons(SON_PORT);
+	if(connect(son_conn, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0){
+		printf("Can Not establish connect from sip to son\n");
+		return -1;
+	}
+	printf("sip: connected to local SON\n");
+	return son_conn;
 }
 
 //这个线程每隔ROUTEUPDATE_INTERVAL时间就发送一条路由更新报文
 //在本实验中, 这个线程只广播空的路由更新报文给所有邻居, 
 //我们通过设置SIP报文首部中的dest_nodeID为BROADCAST_NODEID来发送广播
-void* routeupdate_daemon(void* arg) {
-	//你需要编写这里的代码.
-  return 0;
+void* routeupdate_daemon(void* arg) 
+{
+	while(1){
+		sleep(ROUTEUPDATE_INTERVAL);
+		sip_pkt_t sendbuf;
+		memset(&sendbuf, 0, sizeof sendbuf);
+		sendbuf.header.type = ROUTE_UPDATE;
+		sendbuf.header.dest_nodeID = BROADCAST_NODEID;
+		sendbuf.header.src_nodeID = topology_getMyNodeID();
+		sendbuf.header.length = 0;
+		if(son_sendpkt(BROADCAST_NODEID, &sendbuf, son_conn) == -1)
+			break;
+	}
+	pthread_exit(NULL);
 }
 
 //这个线程处理来自SON进程的进入报文
 //它通过调用son_recvpkt()接收来自SON进程的报文
 //在本实验中, 这个线程在接收到报文后, 只是显示报文已接收到的信息, 并不处理报文 
-void* pkthandler(void* arg) {
+void* pkthandler(void* arg) 
+{
 	sip_pkt_t pkt;
 
 	while(son_recvpkt(&pkt,son_conn)>0) {
@@ -63,11 +90,14 @@ void* pkthandler(void* arg) {
 
 //这个函数终止SIP进程, 当SIP进程收到信号SIGINT时会调用这个函数. 
 //它关闭所有连接, 释放所有动态分配的内存.
-void sip_stop() {
-	//你需要编写这里的代码.
+void sip_stop() 
+{
+	close(son_conn);
+	exit(0);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) 
+{
 	printf("SIP layer is starting, please wait...\n");
 
 	//初始化全局变量

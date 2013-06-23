@@ -112,82 +112,54 @@ void* routeupdate_daemon(void* arg)
 void* pkthandler(void* arg) 
 {
 	sip_pkt_t pkt;
-	int level = topology_getMyNodeID();
+	int myNodeID = topology_getMyNodeID();
 	int nbr_num = topology_getNbrNum();
 	int node_num = topology_getNodeNum();
 
 	while(son_recvpkt(&pkt,son_conn)>0) {
-		printf("Routing: received a packet from neighbor %d\n",pkt.header.src_nodeID);
+//		printf("Routing: received a packet from neighbor %d\n",pkt.header.src_nodeID);
 		switch(pkt.header.type){
 			case ROUTE_UPDATE:
-				printf("receive ROUTE UPDATE pkt\n");
-				int i=0;
-				for(i = 0; i< nbr_num + 1;i++)
-				{
-					if(dv[i].nodeID == pkt.header.src_nodeID)
+				pthread_mutex_lock(dv_mutex);
+				pthread_mutex_lock(routingtable_mutex);
+				pkt_routeupdate_t *routemsg = (pkt_routeupdate_t *)pkt.data;
+				int i, j, srcNode = pkt.header.src_nodeID;
+				printf("receive ROUTE UPDATE MESSAGE FROM NODE %d\n", srcNode);
+				for(j = 0; j < routemsg->entryNum; j ++)
+					dvtable_setcost(dv, srcNode, routemsg->entry[j].nodeID, routemsg->entry[j].cost);
+				dvtable_print(dv);
+				for(i = 0;i < nbr_num + 1;i ++) {
+					if(myNodeID == dv[i].nodeID)
 						break;
 				}
-				int key = i;//renew dv[key]
-				int entrynum = *(int *)(pkt.data);
-				routeupdate_entry_t * entry = malloc(sizeof(routeupdate_entry_t)*entrynum);
-				memcpy(entry,&(pkt.data[4]),entrynum*sizeof(routeupdate_entry_t));
-
-				int j=0;
-				for(i=0; i < entrynum; i++){
-					for(j = 0; j < node_num; j++){
-						if(dv[key].dvEntry[j].nodeID == entry[i].nodeID)
-							dv[key].dvEntry[j].cost = entry[i].cost;
-					}
-				}
-
-				int local =0;
-				for(i=0; i< nbr_num + 1; i++){
-					if(dv[i].nodeID == level) {
-						local = i;
-						break;
-					}
-				}
-
-				int slotnum = makehash(level);// route table
-				for(i=0; i < node_num; i++)
-					for(j=0; j < node_num; j++)
-					{
-						if(dvtable_getcost(dv,level,dv[local].dvEntry[i].nodeID)>dvtable_getcost(dv,level,dv[local].dvEntry[j].nodeID)+dvtable_getcost(dv,dv[local].dvEntry[j].nodeID,dv[local].dvEntry[i].nodeID))
-						{
-							dvtable_setcost(dv,level,dv[local].dvEntry[i].nodeID,dvtable_getcost(dv,level,dv[local].dvEntry[j].nodeID)+dvtable_getcost(dv,dv[local].dvEntry[j].nodeID,dv[local].dvEntry[i].nodeID));
-							routingtable_entry_t *head =routingtable->hash[slotnum];
-							while(head != NULL)
-							{
-								if(head->destNodeID == dv[local].dvEntry[i].nodeID)
-								{
-									printf("update route: %d\n",dv[local].dvEntry[i].nodeID);
-									printf("change nextnodeID to %d\n\n",dv[local].dvEntry[j].nodeID);
-									head->nextNodeID = dv[local].dvEntry[j].nodeID;
-									break;
-								}
-							}
-							if(head ==NULL)
-							{
-								printf("update route && add: %d to route\n",dv[local].dvEntry[i].nodeID);
-								printf("change nextnodeID to %d\n\n",dv[local].dvEntry[j].nodeID);
-								head = malloc(sizeof(routingtable_entry_t));
-								head->destNodeID = dv[local].dvEntry[i].nodeID;
-								head->nextNodeID = dv[local].dvEntry[j].nodeID;
-								head->next = routingtable->hash[slotnum];
-								routingtable->hash[slotnum] =head;
-							}
+				dv_entry_t *myEntry = dv[i].dvEntry;
+				int *nbr = topology_getNbrArray();
+				for(i = 0; i < node_num; i ++) {
+					int destNode = myEntry[i].nodeID;
+					for(j = 0;j < nbr_num;j ++)	{
+						int viaNode = nbr[j];
+						int firstCost = nbrcosttable_getcost(nct, viaNode);
+						int lastCost = dvtable_getcost(dv, viaNode, destNode);
+						if(firstCost + lastCost < dvtable_getcost(dv, myNodeID, destNode)) {
+							printf("now update routing table\n");
+							printf("to destNode %d via nextNode %d \n", destNode, viaNode);
+							dvtable_setcost(dv, myNodeID, destNode, firstCost + lastCost);
+							routingtable_setnextnode(routingtable, destNode, viaNode);
 						}
-
 					}
+				}
+				pthread_mutex_unlock(routingtable_mutex);
+				pthread_mutex_unlock(dv_mutex);
 				break;
 			case SIP:
 				if(pkt.header.dest_nodeID == topology_getMyNodeID()){
 					seg_t seg_data;
 					memcpy(&seg_data, pkt.data, sizeof(seg_t));
+					printf("RECEIVE PKT, destNode is me ");
 					if(forwardsegToSTCP(stcp_conn, pkt.header.src_nodeID, &seg_data) == -1)
-						printf("can't forward seg to STCP \n");
+						printf("failed forwarding the seg to local STCP \n");
 					else
-						printf("forward seg to STCP \n");
+						printf("FORWARD the seg to local STCP \n");
 				}
 				else{
 					pthread_mutex_lock(routingtable_mutex);
@@ -196,7 +168,8 @@ void* pkthandler(void* arg)
 					if(son_sendpkt(nextNodeID, &pkt, son_conn) == -1)
 						printf("can't send pkt to son \n");
 					else
-						printf("receive PKT & transmit it to nextNodeID %d\n",nextNodeID);
+						printf("RECEIVE PKT but DESTNODE is %d SO TRANSMIT it to nextNodeID %d\n",
+								pkt.header.dest_nodeID, nextNodeID);
 				}
 				break;
 		}

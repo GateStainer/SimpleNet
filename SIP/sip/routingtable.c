@@ -75,6 +75,7 @@ void routingtable_setnextnode(routingtable_t* routingtable, int destNodeID, int 
 	}
 	
 	//can not find the item, add it
+	printf("add new route item\n");
 	temp = (routingtable_entry_t *)malloc(sizeof(routingtable_entry_t));
 	temp->destNodeID = destNodeID;
 	temp->nextNodeID = nextNodeID;

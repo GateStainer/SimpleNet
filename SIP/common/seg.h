@@ -10,6 +10,11 @@
 #define SEG_H
 
 #include "constants.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
+#include "sys/socket.h"
+
 
 //段类型定义, 用于STCP.
 #define	SYN 0
@@ -18,6 +23,9 @@
 #define	FINACK 3
 #define	DATA 4
 #define	DATAACK 5
+#define u_short unsigned short
+#define u_long unsigned long
+#define u_char unsigned char
 
 //段首部定义. 
 

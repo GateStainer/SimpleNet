@@ -12,7 +12,7 @@
 
 // 这个线程打开TCP端口CONNECTION_PORT, 等待节点ID比自己大的所有邻居的进入连接,
 // 在所有进入连接都建立后, 这个线程终止.
-void* waitNbrs();
+void* waitNbrs(void* arg);
 
 // 这个函数连接到节点ID比自己小的所有邻居.
 // 在所有外出连接都建立后, 返回1, 否则返回-1.
@@ -24,7 +24,7 @@ int connectNbrs();
 void waitSIP();
 
 //每个listen_to_neighbor线程持续接收来自一个邻居的报文. 它将接收到的报文转发给SIP进程.
-//所有的listen_to_neighbor线程都是在到邻居的TCP连接全部建立之后启动的.
+//所有的listen_to_neighbor线程都是在到邻居的TCP连接全部建立之后启动的.  
 void* listen_to_neighbor(void* arg);
 
 //这个函数停止重叠网络, 当接收到信号SIGINT时, 该函数被调用.

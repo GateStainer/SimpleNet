@@ -1,8 +1,8 @@
 //文件名: son/son.c
 //
-//描述: 这个文件实现SON进程
+//描述: 这个文件实现SON进程 
 //SON进程首先连接到所有邻居, 然后启动listen_to_neighbor线程, 每个该线程持续接收来自一个邻居的进入报文, 并将该报文转发给SIP进程. 
-//然后SON进程等待来自SIP进程的连接. 在与SIP进程建立连接之后, SON进程持续接收来自SIP进程的sendpkt_arg_t结构, 并将接收到的报文发送到重叠网络中.  
+//然后SON进程等待来自SIP进程的连接. 在与SIP进程建立连接之后, SON进程持续接收来自SIP进程的sendpkt_arg_t结构, 并将接收到的报文发送到重叠网络中. 
 //
 //创建日期: 2013年1月
 
@@ -27,7 +27,7 @@
 #include "neighbortable.h"
 
 //你应该在这个时间段内启动所有重叠网络节点上的SON进程
-#define SON_START_DELAY 60
+#define SON_START_DELAY 30
 
 /**************************************************************/
 //声明全局变量
@@ -43,46 +43,180 @@ int sip_conn;
 /**************************************************************/
 
 // 这个线程打开TCP端口CONNECTION_PORT, 等待节点ID比自己大的所有邻居的进入连接,
-// 在所有进入连接都建立后, 这个线程终止.
-void* waitNbrs(void* arg) {
-	//你需要编写这里的代码.
-  return 0;
+// 在所有进入连接都建立后, 这个线程终止. 
+void* waitNbrs(void* arg) 
+{
+	int listenfd, connfd;
+	socklen_t clilen;
+	struct sockaddr_in cliaddr, servaddr;
+
+	if( (listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+		perror("error in creating the socket");
+		exit(2);
+	}
+	int opt = 1;
+	setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	memset(&servaddr,0, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servaddr.sin_port = htons(CONNECTION_PORT);
+	bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+	listen(listenfd, LISTENQ);
+	printf("in waitNbrs running...waiting for SON neighbor great than me to connect.\n");
+
+	int i;
+	int listenNum = topology_getGreatNum();
+	for(i = 0; i < listenNum; i++){
+		memset(&cliaddr, 0, sizeof(cliaddr));
+		clilen = sizeof(cliaddr);
+		connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
+		if(connfd == -1)
+			printf("error when neighbor connect\n");
+		else
+			printf("waitNbrs : %d \n", connfd);
+		in_addr_t client_ip = cliaddr.sin_addr.s_addr;
+		if(nt_addconnByIP(nt, client_ip, connfd) == -1)
+			printf("can't add connByIP \n");
+		printf("neighbor %d connected to me\n", (unsigned char)ntohl(client_ip));
+	}
+
+
+	close(listenfd);
+	pthread_exit(NULL);
 }
 
 // 这个函数连接到节点ID比自己小的所有邻居.
 // 在所有外出连接都建立后, 返回1, 否则返回-1.
-int connectNbrs() {
-	//你需要编写这里的代码.
-  return 0;
+int connectNbrs() 
+{
+	int nbrNum = topology_getNbrNum();
+	int myNodeid = topology_getMyNodeID();
+	int i = 0;
+	int sockfd;
+	for(i = 0; i < nbrNum ; i++){
+		if(nt[i].nodeID < myNodeid){
+			if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+				printf("error in creating socket\n");
+				return -1;
+			}
+			struct sockaddr_in servaddr;
+			memset(&servaddr, 0, sizeof(servaddr));
+			servaddr.sin_family = AF_INET;
+			servaddr.sin_addr.s_addr = nt[i].nodeIP;
+			servaddr.sin_port = htons(CONNECTION_PORT);
+			printf("SON: try to connect neighbor %d \n", nt[i].nodeID);
+			if(connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0){
+				printf("Can Not establish SON network to neighbor less than me\n");
+				return -1;
+			}
+
+			if(nt_addconnByIP(nt, nt[i].nodeIP, sockfd) == -1)
+				printf("can't addconn in nt\n");
+			printf("connect to neighbor %d \n", nt[i].nodeID);
+		}
+	}
+	return 1;
 }
 
 //每个listen_to_neighbor线程持续接收来自一个邻居的报文. 它将接收到的报文转发给SIP进程.
-//所有的listen_to_neighbor线程都是在到邻居的TCP连接全部建立之后启动的.
-void* listen_to_neighbor(void* arg) {
-	//你需要编写这里的代码.
-  return 0;
+//所有的listen_to_neighbor线程都是在到邻居的TCP连接全部建立之后启动的. 
+void* listen_to_neighbor(void* arg) 
+{
+	int i = *(int *)arg;
+	free(arg);
+	int connfd = nt[i].conn;
+
+	//when to exit?
+	while(1){
+		sip_pkt_t recvbuf;
+		printf("listen_to_neighbor %d here\n", nt[i].nodeID);
+		if(recvpkt(&recvbuf, connfd) == -1){
+			printf("son: failed to recv pkt from neighbor %d\n", nt[i].nodeID);
+			break;
+		}
+		printf("son: recv pkt from neighbor %d \n", nt[i].nodeID);
+		if(forwardpktToSIP(&recvbuf, sip_conn) == -1){
+			printf("son: can't forward pkt to SIP \n");
+			// sip start later than listen to, you can't break here!!!!!!!
+//			break; 
+		}
+		printf("son: forward pkt from to SIP\n");
+	}
+	pthread_exit(NULL);
 }
 
 //这个函数打开TCP端口SON_PORT, 等待来自本地SIP进程的进入连接. 
 //在本地SIP进程连接之后, 这个函数持续接收来自SIP进程的sendpkt_arg_t结构, 并将报文发送到重叠网络中的下一跳. 
 //如果下一跳的节点ID为BROADCAST_NODEID, 报文应发送到所有邻居节点.
-void waitSIP() {
-	//你需要编写这里的代码.
+void waitSIP() 
+{
+	int listenfd;
+	socklen_t clilen;
+	struct sockaddr_in cliaddr, servaddr;
+
+	if( (listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+		perror("error in creating the socket");
+		exit(2);
+	}
+
+	int opt = 1;
+	setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	clilen = sizeof(cliaddr);
+	memset(&servaddr,0, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servaddr.sin_port = htons(SON_PORT);
+	bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+	listen(listenfd, LISTENQ);
+	printf("son running...waiting for SIP connection.\n");
+	sip_conn = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
+	close(listenfd);
+
+	int i;
+	while(1){
+		sip_pkt_t recvbuf;
+		int nextNode;
+		int nbrNum = topology_getNbrNum();
+		if(getpktToSend(&recvbuf, &nextNode, sip_conn) == -1)
+			break;
+		printf("son: get pkt To send \n");
+		if(nextNode == BROADCAST_NODEID){
+			for(i = 0; i < nbrNum; i++){
+				if(sendpkt(&recvbuf, nt[i].conn) == -1){
+					printf("son: can't send pkt to neighbor %d \n", nt[i].nodeID);
+				//	printf("son: the connfd is %d \n", nt[i].conn);
+				}
+				else
+					printf("son send pkt to neighbor %d \n", nt[i].nodeID);
+			}
+		}
+		else{
+			sendpkt(&recvbuf, nt_getconn(nt, nextNode));
+		}
+
+	}
+
 }
 
 //这个函数停止重叠网络, 当接收到信号SIGINT时, 该函数被调用.
 //它关闭所有的连接, 释放所有动态分配的内存.
-void son_stop() {
-	//你需要编写这里的代码.
+void son_stop() 
+{
+	close(sip_conn);
+	nt_destroy(nt);
+	exit(0);
 }
 
-int main() {
+int main() 
+{
 	//启动重叠网络初始化工作
 	printf("Overlay network: Node %d initializing...\n",topology_getMyNodeID());	
 
+	topology_analysis();
+
 	//创建一个邻居表
 	nt = nt_create();
-	//将sip_conn初始化为-1, 即还未与SIP进程连接.
+	//将sip_conn初始化为-1, 即还未与SIP进程连接
 	sip_conn = -1;
 	
 	//注册一个信号句柄, 用于终止进程

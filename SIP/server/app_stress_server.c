@@ -33,16 +33,28 @@
 
 //这个函数连接到本地SIP进程的端口SIP_PORT. 如果TCP连接失败, 返回-1. 连接成功, 返回TCP套接字描述符, STCP将使用该描述符发送段.
 int connectToSIP() {
+	int sockfd;
+	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+		printf("error in creating son network\n");
+		return -1;
+	}
+	struct sockaddr_in servaddr;
+	memset(&servaddr, 0, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	servaddr.sin_port = htons(SIP_PORT);
+	if(connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0){
+		printf("Can Not establish SON network\n");
+		return -1;
+	}
+	return sockfd;
 
-	//你需要编写这里的代码.
-	
 }
 
 //这个函数断开到本地SIP进程的TCP连接. 
 void disconnectToSIP(int sip_conn) {
-
-	//你需要编写这里的代码.
-	
+	if(close(sip_conn) < 0)
+		printf("can't disconnect to SIP \n");
 }
 
 int main() {

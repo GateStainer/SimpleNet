@@ -1,75 +1,243 @@
-// ÎÄ¼þÃû pkt.c
-// ´´½¨ÈÕÆÚ: 2013Äê1ÔÂ
+// æ–‡ä»¶å: common/pkt.c
+// åˆ›å»ºæ—¥æœŸ: 2013å¹´1æœˆ
 
 #include "pkt.h"
+#include "stdio.h"
 
-// son_sendpkt()ÓÉSIP½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇÒªÇóSON½ø³Ì½«±¨ÎÄ·¢ËÍµ½ÖØµþÍøÂçÖÐ. SON½ø³ÌºÍSIP½ø³ÌÍ¨¹ýÒ»¸ö±¾µØTCPÁ¬½Ó»¥Á¬.
-// ÔÚson_sendpkt()ÖÐ, ±¨ÎÄ¼°ÆäÏÂÒ»ÌøµÄ½ÚµãID±»·â×°½øÊý¾Ý½á¹¹sendpkt_arg_t, ²¢Í¨¹ýTCPÁ¬½Ó·¢ËÍ¸øSON½ø³Ì. 
-// ²ÎÊýson_connÊÇSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½ÓÌ×½Ó×ÖÃèÊö·û.
-// µ±Í¨¹ýSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½Ó·¢ËÍÊý¾Ý½á¹¹sendpkt_arg_tÊ±, Ê¹ÓÃ'!&'ºÍ'!#'×÷Îª·Ö¸ô·û, °´ÕÕ'!& sendpkt_arg_t½á¹¹ !#'µÄË³Ðò·¢ËÍ.
-// Èç¹û·¢ËÍ³É¹¦, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// son_sendpkt()ç”±SIPè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯è¦æ±‚SONè¿›ç¨‹å°†æŠ¥æ–‡å‘é€åˆ°é‡å ç½‘ç»œä¸­. SONè¿›ç¨‹å’ŒSIPè¿›ç¨‹é€šè¿‡ä¸€ä¸ªæœ¬åœ°TCPè¿žæŽ¥äº’è¿ž.
+// åœ¨son_sendpkt()ä¸­, æŠ¥æ–‡åŠå…¶ä¸‹ä¸€è·³çš„èŠ‚ç‚¹IDè¢«å°è£…è¿›æ•°æ®ç»“æž„sendpkt_arg_t, å¹¶é€šè¿‡TCPè¿žæŽ¥å‘é€ç»™SONè¿›ç¨‹. 
+// å‚æ•°son_connæ˜¯SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å¥—æŽ¥å­—æè¿°ç¬¦.
+// å½“é€šè¿‡SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€æ•°æ®ç»“æž„sendpkt_arg_tæ—¶, ä½¿ç”¨'!&'å’Œ'!#'ä½œä¸ºåˆ†éš”ç¬¦, æŒ‰ç…§'!& sendpkt_arg_tç»“æž„ !#'çš„é¡ºåºå‘é€.
+// å¦‚æžœå‘é€æˆåŠŸ, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int son_sendpkt(int nextNodeID, sip_pkt_t* pkt, int son_conn)
 {
-  return 0;
+	char begin[] = "!&";
+	char end[] = "!#";
+	sendpkt_arg_t sendbuf;
+	sendbuf.nextNodeID = nextNodeID;
+	sendbuf.pkt = *pkt;
+	if(send(son_conn, &begin, 2, 0) == -1)
+		return -1;
+	if(send(son_conn, &sendbuf, sizeof sendbuf, 0) == -1)
+		return -1;
+	if(send(son_conn, &end, 2, 0) == -1)
+		return -1;
+	return 1;
 }
 
-// son_recvpkt()º¯ÊýÓÉSIP½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇ½ÓÊÕÀ´×ÔSON½ø³ÌµÄ±¨ÎÄ. 
-// ²ÎÊýson_connÊÇSIP½ø³ÌºÍSON½ø³ÌÖ®¼äTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û. ±¨ÎÄÍ¨¹ýSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#. 
-// ÎªÁË½ÓÊÕ±¨ÎÄ, Õâ¸öº¯ÊýÊ¹ÓÃÒ»¸ö¼òµ¥µÄÓÐÏÞ×´Ì¬»úFSM
-// PKTSTART1 -- Æðµã 
-// PKTSTART2 -- ½ÓÊÕµ½'!', ÆÚ´ý'&' 
-// PKTRECV -- ½ÓÊÕµ½'&', ¿ªÊ¼½ÓÊÕÊý¾Ý
-// PKTSTOP1 -- ½ÓÊÕµ½'!', ÆÚ´ý'#'ÒÔ½áÊøÊý¾ÝµÄ½ÓÊÕ 
-// Èç¹û³É¹¦½ÓÊÕ±¨ÎÄ, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// son_recvpkt()å‡½æ•°ç”±SIPè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯æŽ¥æ”¶æ¥è‡ªSONè¿›ç¨‹çš„æŠ¥æ–‡. 
+// å‚æ•°son_connæ˜¯SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦. æŠ¥æ–‡é€šè¿‡SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#. 
+// ä¸ºäº†æŽ¥æ”¶æŠ¥æ–‡, è¿™ä¸ªå‡½æ•°ä½¿ç”¨ä¸€ä¸ªç®€å•çš„æœ‰é™çŠ¶æ€æœºFSM
+// PKTSTART1 -- èµ·ç‚¹ 
+// PKTSTART2 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'&' 
+// PKTRECV -- æŽ¥æ”¶åˆ°'&', å¼€å§‹æŽ¥æ”¶æ•°æ®
+// PKTSTOP1 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'#'ä»¥ç»“æŸæ•°æ®çš„æŽ¥æ”¶ 
+// å¦‚æžœæˆåŠŸæŽ¥æ”¶æŠ¥æ–‡, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int son_recvpkt(sip_pkt_t* pkt, int son_conn)
 {
-  return 0;
+	enum {PKTSTART1, PKTSTART2, PKTRECV, PKTSTOP1, PKTSTOP2} state;
+	state = PKTSTART1;
+	char buf;
+	char *recvbuf = (char *)pkt;
+	int i = 0, n;
+
+	while( (n = recv(son_conn, &buf, 1, 0)) > 0){
+		switch(state){
+			case PKTSTART1:
+				if(buf == '!')
+					state = PKTSTART2;
+				break;
+			case PKTSTART2:
+				if(buf == '&')
+					state = PKTRECV;
+				else
+					state = PKTSTART1;
+				break;
+			case PKTRECV:
+				if(buf != '!')
+					recvbuf[i++] = buf;
+				else
+					state = PKTSTOP1;
+				break;
+			case PKTSTOP1:
+				if(buf == '#')
+					state = PKTSTOP2;
+				else{
+					recvbuf[i++] = '!';
+					recvbuf[i++] = buf;
+					state = PKTRECV;
+				}
+				break;
+			case PKTSTOP2:
+				break;
+		}
+		if(state == PKTSTOP2)
+			break;
+	}
+	
+	if(n <= 0)
+		return -1;
+	return 1;
 }
 
-// Õâ¸öº¯ÊýÓÉSON½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇ½ÓÊÕÊý¾Ý½á¹¹sendpkt_arg_t.
-// ±¨ÎÄºÍÏÂÒ»ÌøµÄ½ÚµãID±»·â×°½øsendpkt_arg_t½á¹¹.
-// ²ÎÊýsip_connÊÇÔÚSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û. 
-// sendpkt_arg_t½á¹¹Í¨¹ýSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#. 
-// ÎªÁË½ÓÊÕ±¨ÎÄ, Õâ¸öº¯ÊýÊ¹ÓÃÒ»¸ö¼òµ¥µÄÓÐÏÞ×´Ì¬»úFSM
-// PKTSTART1 -- Æðµã 
-// PKTSTART2 -- ½ÓÊÕµ½'!', ÆÚ´ý'&' 
-// PKTRECV -- ½ÓÊÕµ½'&', ¿ªÊ¼½ÓÊÕÊý¾Ý
-// PKTSTOP1 -- ½ÓÊÕµ½'!', ÆÚ´ý'#'ÒÔ½áÊøÊý¾ÝµÄ½ÓÊÕ
-// Èç¹û³É¹¦½ÓÊÕsendpkt_arg_t½á¹¹, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// è¿™ä¸ªå‡½æ•°ç”±SONè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯æŽ¥æ”¶æ•°æ®ç»“æž„sendpkt_arg_t.
+// æŠ¥æ–‡å’Œä¸‹ä¸€è·³çš„èŠ‚ç‚¹IDè¢«å°è£…è¿›sendpkt_arg_tç»“æž„.
+// å‚æ•°sip_connæ˜¯åœ¨SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦. 
+// sendpkt_arg_tç»“æž„é€šè¿‡SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#. 
+// ä¸ºäº†æŽ¥æ”¶æŠ¥æ–‡, è¿™ä¸ªå‡½æ•°ä½¿ç”¨ä¸€ä¸ªç®€å•çš„æœ‰é™çŠ¶æ€æœºFSM
+// PKTSTART1 -- èµ·ç‚¹ 
+// PKTSTART2 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'&' 
+// PKTRECV -- æŽ¥æ”¶åˆ°'&', å¼€å§‹æŽ¥æ”¶æ•°æ®
+// PKTSTOP1 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'#'ä»¥ç»“æŸæ•°æ®çš„æŽ¥æ”¶
+// å¦‚æžœæˆåŠŸæŽ¥æ”¶sendpkt_arg_tç»“æž„, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int getpktToSend(sip_pkt_t* pkt, int* nextNode,int sip_conn)
 {
-  return 0;
+	enum {PKTSTART1, PKTSTART2, PKTRECV, PKTSTOP1, PKTSTOP2} state;
+	state = PKTSTART1;
+	char buf;
+	sendpkt_arg_t buffer;
+	char *recvbuf = (char *)&buffer;
+	int i = 0, n;
+
+	while( (n = recv(sip_conn, &buf, 1, 0)) > 0){
+		switch(state){
+			case PKTSTART1:
+				if(buf == '!')
+					state = PKTSTART2;
+				break;
+			case PKTSTART2:
+				if(buf == '&')
+					state = PKTRECV;
+				else
+					state = PKTSTART1;
+				break;
+			case PKTRECV:
+				if(buf != '!')
+					recvbuf[i++] = buf;
+				else
+					state = PKTSTOP1;
+				break;
+			case PKTSTOP1:
+				if(buf == '#')
+					state = PKTSTOP2;
+				else{
+					recvbuf[i++] = '!';
+					recvbuf[i++] = buf;
+					state = PKTRECV;
+				}
+				break;
+			case PKTSTOP2:
+				break;
+		}
+		if(state == PKTSTOP2)
+			break;
+	}
+	
+	memcpy(pkt, &(buffer.pkt), sizeof (sip_pkt_t));
+	*nextNode = buffer.nextNodeID;
+
+	if(n <= 0)
+		return -1;
+	return 1;
 }
 
-// forwardpktToSIP()º¯ÊýÊÇÔÚSON½ø³Ì½ÓÊÕµ½À´×ÔÖØµþÍøÂçÖÐÆäÁÚ¾ÓµÄ±¨ÎÄºó±»µ÷ÓÃµÄ. 
-// SON½ø³Ìµ÷ÓÃÕâ¸öº¯Êý½«±¨ÎÄ×ª·¢¸øSIP½ø³Ì. 
-// ²ÎÊýsip_connÊÇSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û. 
-// ±¨ÎÄÍ¨¹ýSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#, °´ÕÕ'!& ±¨ÎÄ !#'µÄË³Ðò·¢ËÍ. 
-// Èç¹û±¨ÎÄ·¢ËÍ³É¹¦, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// forwardpktToSIP()å‡½æ•°æ˜¯åœ¨SONè¿›ç¨‹æŽ¥æ”¶åˆ°æ¥è‡ªé‡å ç½‘ç»œä¸­å…¶é‚»å±…çš„æŠ¥æ–‡åŽè¢«è°ƒç”¨çš„. 
+// SONè¿›ç¨‹è°ƒç”¨è¿™ä¸ªå‡½æ•°å°†æŠ¥æ–‡è½¬å‘ç»™SIPè¿›ç¨‹. 
+// å‚æ•°sip_connæ˜¯SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦. 
+// æŠ¥æ–‡é€šè¿‡SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#, æŒ‰ç…§'!& æŠ¥æ–‡ !#'çš„é¡ºåºå‘é€. 
+// å¦‚æžœæŠ¥æ–‡å‘é€æˆåŠŸ, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int forwardpktToSIP(sip_pkt_t* pkt, int sip_conn)
 {
-  return 0;
+	char begin[] = "!&";
+	char end[] = "!#";
+	if(send(sip_conn, &begin, 2, 0) == -1){
+		perror("can't send !&");
+		return -1;
+	}
+	if(send(sip_conn, pkt, sizeof (sip_pkt_t), 0) == -1){
+		printf("can't send sip_pkt_t \n");
+		return -1;
+	}
+	if(send(sip_conn, &end, 2, 0) == -1){
+		printf("can't send !# \n");
+		return -1;
+	}
+	return 1;
 }
 
-// sendpkt()º¯ÊýÓÉSON½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇ½«½ÓÊÕ×ÔSIP½ø³ÌµÄ±¨ÎÄ·¢ËÍ¸øÏÂÒ»Ìø.
-// ²ÎÊýconnÊÇµ½ÏÂÒ»Ìø½ÚµãµÄTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û.
-// ±¨ÎÄÍ¨¹ýSON½ø³ÌºÍÆäÁÚ¾Ó½ÚµãÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#, °´ÕÕ'!& ±¨ÎÄ !#'µÄË³Ðò·¢ËÍ. 
-// Èç¹û±¨ÎÄ·¢ËÍ³É¹¦, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+
+// sendpkt()å‡½æ•°ç”±SONè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯å°†æŽ¥æ”¶è‡ªSIPè¿›ç¨‹çš„æŠ¥æ–‡å‘é€ç»™ä¸‹ä¸€è·³.
+// å‚æ•°connæ˜¯åˆ°ä¸‹ä¸€è·³èŠ‚ç‚¹çš„TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦.
+// æŠ¥æ–‡é€šè¿‡SONè¿›ç¨‹å’Œå…¶é‚»å±…èŠ‚ç‚¹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#, æŒ‰ç…§'!& æŠ¥æ–‡ !#'çš„é¡ºåºå‘é€. 
+// å¦‚æžœæŠ¥æ–‡å‘é€æˆåŠŸ, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int sendpkt(sip_pkt_t* pkt, int conn)
 {
-  return 0;
+	char begin[] = "!&";
+	char end[] = "!#";
+	if(send(conn, &begin, 2, 0) == -1)
+		return -1;
+	if(send(conn, pkt, sizeof (sip_pkt_t), 0) == -1)
+		return -1;
+	if(send(conn, &end, 2, 0) == -1)
+		return -1;
+	return 1;
 }
 
-// recvpkt()º¯ÊýÓÉSON½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇ½ÓÊÕÀ´×ÔÖØµþÍøÂçÖÐÆäÁÚ¾ÓµÄ±¨ÎÄ.
-// ²ÎÊýconnÊÇµ½ÆäÁÚ¾ÓµÄTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û.
-// ±¨ÎÄÍ¨¹ýSON½ø³ÌºÍÆäÁÚ¾ÓÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#. 
-// ÎªÁË½ÓÊÕ±¨ÎÄ, Õâ¸öº¯ÊýÊ¹ÓÃÒ»¸ö¼òµ¥µÄÓÐÏÞ×´Ì¬»úFSM
-// PKTSTART1 -- Æðµã 
-// PKTSTART2 -- ½ÓÊÕµ½'!', ÆÚ´ý'&' 
-// PKTRECV -- ½ÓÊÕµ½'&', ¿ªÊ¼½ÓÊÕÊý¾Ý
-// PKTSTOP1 -- ½ÓÊÕµ½'!', ÆÚ´ý'#'ÒÔ½áÊøÊý¾ÝµÄ½ÓÊÕ 
-// Èç¹û³É¹¦½ÓÊÕ±¨ÎÄ, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// recvpkt()å‡½æ•°ç”±SONè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯æŽ¥æ”¶æ¥è‡ªé‡å ç½‘ç»œä¸­å…¶é‚»å±…çš„æŠ¥æ–‡.
+// å‚æ•°connæ˜¯åˆ°å…¶é‚»å±…çš„TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦.
+// æŠ¥æ–‡é€šè¿‡SONè¿›ç¨‹å’Œå…¶é‚»å±…ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#. 
+// ä¸ºäº†æŽ¥æ”¶æŠ¥æ–‡, è¿™ä¸ªå‡½æ•°ä½¿ç”¨ä¸€ä¸ªç®€å•çš„æœ‰é™çŠ¶æ€æœºFSM
+// PKTSTART1 -- èµ·ç‚¹ 
+// PKTSTART2 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'&' 
+// PKTRECV -- æŽ¥æ”¶åˆ°'&', å¼€å§‹æŽ¥æ”¶æ•°æ®
+// PKTSTOP1 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'#'ä»¥ç»“æŸæ•°æ®çš„æŽ¥æ”¶ 
+// å¦‚æžœæˆåŠŸæŽ¥æ”¶æŠ¥æ–‡, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int recvpkt(sip_pkt_t* pkt, int conn)
 {
-  return 0;
+	enum {PKTSTART1, PKTSTART2, PKTRECV, PKTSTOP1, PKTSTOP2} state;
+	state = PKTSTART1;
+	char buf;
+	char *recvbuf = (char *)pkt;
+	int i = 0, n;
+
+	printf("before recvpkt \n");
+	printf("conn : %d \n", conn);
+	while( (n = recv(conn, &buf, 1, 0)) > 0){
+		switch(state){
+			case PKTSTART1:
+				if(buf == '!')
+					state = PKTSTART2;
+				break;
+			case PKTSTART2:
+				if(buf == '&')
+					state = PKTRECV;
+				else
+					state = PKTSTART1;
+				break;
+			case PKTRECV:
+				if(buf != '!')
+					recvbuf[i++] = buf;
+				else
+					state = PKTSTOP1;
+				break;
+			case PKTSTOP1:
+				if(buf == '#')
+					state = PKTSTOP2;
+				else{
+					recvbuf[i++] = '!';
+					recvbuf[i++] = buf;
+					state = PKTRECV;
+				}
+				break;
+			case PKTSTOP2:
+				break;
+		}
+		if(state == PKTSTOP2)
+			break;
+	}
+	
+	printf("after recvpkt \n");
+	if(n <= 0)
+		return -1;
+	return 1;
 }

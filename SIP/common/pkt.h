@@ -2,17 +2,19 @@
 #define PKT_H
 
 #include "constants.h"
+#include "sys/socket.h"
+#include "string.h"
 
-//±¨ÎÄÀàÐÍ¶¨Òå, ÓÃÓÚ±¨ÎÄÊ×²¿ÖÐµÄtype×Ö¶Î
+//æŠ¥æ–‡ç±»åž‹å®šä¹‰, ç”¨äºŽæŠ¥æ–‡é¦–éƒ¨ä¸­çš„typeå­—æ®µ
 #define	ROUTE_UPDATE 1
 #define SIP 2	
 
-//SIP±¨ÎÄ¸ñÊ½¶¨Òå
+//SIPæŠ¥æ–‡æ ¼å¼å®šä¹‰
 typedef struct sipheader {
-  int src_nodeID;		          //Ô´½ÚµãID
-  int dest_nodeID;		          //Ä¿±ê½ÚµãID
-  unsigned short int length;	  //±¨ÎÄÖÐÊý¾ÝµÄ³¤¶È
-  unsigned short int type;	      //±¨ÎÄÀàÐÍ 
+  int src_nodeID;		          //æºèŠ‚ç‚¹ID
+  int dest_nodeID;		          //ç›®æ ‡èŠ‚ç‚¹ID
+  unsigned short int length;	  //æŠ¥æ–‡ä¸­æ•°æ®çš„é•¿åº¦
+  unsigned short int type;	      //æŠ¥æ–‡ç±»åž‹ 
 } sip_hdr_t;
 
 typedef struct packet {
@@ -20,82 +22,82 @@ typedef struct packet {
   char data[MAX_PKT_LEN];
 } sip_pkt_t;
 
-//Â·ÓÉ¸üÐÂ±¨ÎÄ¶¨Òå
-//¶ÔÓÚÂ·ÓÉ¸üÐÂ±¨ÎÄÀ´Ëµ, Â·ÓÉ¸üÐÂÐÅÏ¢´æ´¢ÔÚ±¨ÎÄµÄdata×Ö¶ÎÖÐ
+//è·¯ç”±æ›´æ–°æŠ¥æ–‡å®šä¹‰
+//å¯¹äºŽè·¯ç”±æ›´æ–°æŠ¥æ–‡æ¥è¯´, è·¯ç”±æ›´æ–°ä¿¡æ¯å­˜å‚¨åœ¨æŠ¥æ–‡çš„dataå­—æ®µä¸­ 
 
-//Ò»ÌõÂ·ÓÉ¸üÐÂÌõÄ¿
+//ä¸€æ¡è·¯ç”±æ›´æ–°æ¡ç›®
 typedef struct routeupdate_entry {
-        unsigned int nodeID;	//Ä¿±ê½ÚµãID
-        unsigned int cost;	    //´ÓÔ´½Úµã(±¨ÎÄÊ×²¿ÖÐµÄsrc_nodeID)µ½Ä¿±ê½ÚµãµÄÁ´Â·´ú¼Û
+        unsigned int nodeID;	//ç›®æ ‡èŠ‚ç‚¹ID
+        unsigned int cost;	    //ä»ŽæºèŠ‚ç‚¹(æŠ¥æ–‡é¦–éƒ¨ä¸­çš„src_nodeID)åˆ°ç›®æ ‡èŠ‚ç‚¹çš„é“¾è·¯ä»£ä»·
 } routeupdate_entry_t;
 
-//Â·ÓÉ¸üÐÂ±¨ÎÄ¸ñÊ½
+//è·¯ç”±æ›´æ–°æŠ¥æ–‡æ ¼å¼
 typedef struct pktrt{
-        unsigned int entryNum;	//Õâ¸öÂ·ÓÉ¸üÐÂ±¨ÎÄÖÐ°üº¬µÄÌõÄ¿Êý
+        unsigned int entryNum;	//è¿™ä¸ªè·¯ç”±æ›´æ–°æŠ¥æ–‡ä¸­åŒ…å«çš„æ¡ç›®æ•°
         routeupdate_entry_t entry[MAX_NODE_NUM];
 } pkt_routeupdate_t;
 
-// Êý¾Ý½á¹¹sendpkt_arg_tÓÃÔÚº¯Êýson_sendpkt()ÖÐ. 
-// son_sendpkt()ÓÉSIP½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇÒªÇóSON½ø³Ì½«±¨ÎÄ·¢ËÍµ½ÖØµþÍøÂçÖÐ. 
+// æ•°æ®ç»“æž„sendpkt_arg_tç”¨åœ¨å‡½æ•°son_sendpkt()ä¸­. 
+// son_sendpkt()ç”±SIPè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯è¦æ±‚SONè¿›ç¨‹å°†æŠ¥æ–‡å‘é€åˆ°é‡å ç½‘ç»œä¸­. 
 // 
-// SON½ø³ÌºÍSIP½ø³ÌÍ¨¹ýÒ»¸ö±¾µØTCPÁ¬½Ó»¥Á¬, ÔÚson_sendpkt()ÖÐ, SIP½ø³ÌÍ¨¹ý¸ÃTCPÁ¬½Ó½«Õâ¸öÊý¾Ý½á¹¹·¢ËÍ¸øSON½ø³Ì. 
-// SON½ø³ÌÍ¨¹ýµ÷ÓÃgetpktToSend()½ÓÊÕÕâ¸öÊý¾Ý½á¹¹. È»ºóSON½ø³Ìµ÷ÓÃsendpkt()½«±¨ÎÄ·¢ËÍ¸øÏÂÒ»Ìø.
+// SONè¿›ç¨‹å’ŒSIPè¿›ç¨‹é€šè¿‡ä¸€ä¸ªæœ¬åœ°TCPè¿žæŽ¥äº’è¿ž, åœ¨son_sendpkt()ä¸­, SIPè¿›ç¨‹é€šè¿‡è¯¥TCPè¿žæŽ¥å°†è¿™ä¸ªæ•°æ®ç»“æž„å‘é€ç»™SONè¿›ç¨‹. 
+// SONè¿›ç¨‹é€šè¿‡è°ƒç”¨getpktToSend()æŽ¥æ”¶è¿™ä¸ªæ•°æ®ç»“æž„. ç„¶åŽSONè¿›ç¨‹è°ƒç”¨sendpkt()å°†æŠ¥æ–‡å‘é€ç»™ä¸‹ä¸€è·³.
 typedef struct sendpktargument {
-  int nextNodeID;        //ÏÂÒ»ÌøµÄ½ÚµãID
-  sip_pkt_t pkt;         //Òª·¢ËÍµÄ±¨ÎÄ
+  int nextNodeID;        //ä¸‹ä¸€è·³çš„èŠ‚ç‚¹ID
+  sip_pkt_t pkt;         //è¦å‘é€çš„æŠ¥æ–‡
 } sendpkt_arg_t;
 
-// son_sendpkt()ÓÉSIP½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇÒªÇóSON½ø³Ì½«±¨ÎÄ·¢ËÍµ½ÖØµþÍøÂçÖÐ. SON½ø³ÌºÍSIP½ø³ÌÍ¨¹ýÒ»¸ö±¾µØTCPÁ¬½Ó»¥Á¬.
-// ÔÚson_sendpkt()ÖÐ, ±¨ÎÄ¼°ÆäÏÂÒ»ÌøµÄ½ÚµãID±»·â×°½øÊý¾Ý½á¹¹sendpkt_arg_t, ²¢Í¨¹ýTCPÁ¬½Ó·¢ËÍ¸øSON½ø³Ì. 
-// ²ÎÊýson_connÊÇSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½ÓÌ×½Ó×ÖÃèÊö·û.
-// µ±Í¨¹ýSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½Ó·¢ËÍÊý¾Ý½á¹¹sendpkt_arg_tÊ±, Ê¹ÓÃ'!&'ºÍ'!#'×÷Îª·Ö¸ô·û, °´ÕÕ'!& sendpkt_arg_t½á¹¹ !#'µÄË³Ðò·¢ËÍ.
-// Èç¹û·¢ËÍ³É¹¦, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// son_sendpkt()ç”±SIPè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯è¦æ±‚SONè¿›ç¨‹å°†æŠ¥æ–‡å‘é€åˆ°é‡å ç½‘ç»œä¸­. SONè¿›ç¨‹å’ŒSIPè¿›ç¨‹é€šè¿‡ä¸€ä¸ªæœ¬åœ°TCPè¿žæŽ¥äº’è¿ž.
+// åœ¨son_sendpkt()ä¸­, æŠ¥æ–‡åŠå…¶ä¸‹ä¸€è·³çš„èŠ‚ç‚¹IDè¢«å°è£…è¿›æ•°æ®ç»“æž„sendpkt_arg_t, å¹¶é€šè¿‡TCPè¿žæŽ¥å‘é€ç»™SONè¿›ç¨‹. 
+// å‚æ•°son_connæ˜¯SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å¥—æŽ¥å­—æè¿°ç¬¦.
+// å½“é€šè¿‡SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€æ•°æ®ç»“æž„sendpkt_arg_tæ—¶, ä½¿ç”¨'!&'å’Œ'!#'ä½œä¸ºåˆ†éš”ç¬¦, æŒ‰ç…§'!& sendpkt_arg_tç»“æž„ !#'çš„é¡ºåºå‘é€.
+// å¦‚æžœå‘é€æˆåŠŸ, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int son_sendpkt(int nextNodeID, sip_pkt_t* pkt, int son_conn);
 
-// son_recvpkt()º¯ÊýÓÉSIP½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇ½ÓÊÕÀ´×ÔSON½ø³ÌµÄ±¨ÎÄ. 
-// ²ÎÊýson_connÊÇSIP½ø³ÌºÍSON½ø³ÌÖ®¼äTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û. ±¨ÎÄÍ¨¹ýSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#. 
-// ÎªÁË½ÓÊÕ±¨ÎÄ, Õâ¸öº¯ÊýÊ¹ÓÃÒ»¸ö¼òµ¥µÄÓÐÏÞ×´Ì¬»úFSM
-// PKTSTART1 -- Æðµã 
-// PKTSTART2 -- ½ÓÊÕµ½'!', ÆÚ´ý'&' 
-// PKTRECV -- ½ÓÊÕµ½'&', ¿ªÊ¼½ÓÊÕÊý¾Ý
-// PKTSTOP1 -- ½ÓÊÕµ½'!', ÆÚ´ý'#'ÒÔ½áÊøÊý¾ÝµÄ½ÓÊÕ 
-// Èç¹û³É¹¦½ÓÊÕ±¨ÎÄ, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// son_recvpkt()å‡½æ•°ç”±SIPè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯æŽ¥æ”¶æ¥è‡ªSONè¿›ç¨‹çš„æŠ¥æ–‡. 
+// å‚æ•°son_connæ˜¯SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦. æŠ¥æ–‡é€šè¿‡SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#. 
+// ä¸ºäº†æŽ¥æ”¶æŠ¥æ–‡, è¿™ä¸ªå‡½æ•°ä½¿ç”¨ä¸€ä¸ªç®€å•çš„æœ‰é™çŠ¶æ€æœºFSM
+// PKTSTART1 -- èµ·ç‚¹ 
+// PKTSTART2 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'&' 
+// PKTRECV -- æŽ¥æ”¶åˆ°'&', å¼€å§‹æŽ¥æ”¶æ•°æ®
+// PKTSTOP1 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'#'ä»¥ç»“æŸæ•°æ®çš„æŽ¥æ”¶ 
+// å¦‚æžœæˆåŠŸæŽ¥æ”¶æŠ¥æ–‡, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int son_recvpkt(sip_pkt_t* pkt, int son_conn);
 
-// Õâ¸öº¯ÊýÓÉSON½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇ½ÓÊÕÊý¾Ý½á¹¹sendpkt_arg_t.
-// ±¨ÎÄºÍÏÂÒ»ÌøµÄ½ÚµãID±»·â×°½øsendpkt_arg_t½á¹¹.
-// ²ÎÊýsip_connÊÇÔÚSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û. 
-// sendpkt_arg_t½á¹¹Í¨¹ýSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#. 
-// ÎªÁË½ÓÊÕ±¨ÎÄ, Õâ¸öº¯ÊýÊ¹ÓÃÒ»¸ö¼òµ¥µÄÓÐÏÞ×´Ì¬»úFSM
-// PKTSTART1 -- Æðµã 
-// PKTSTART2 -- ½ÓÊÕµ½'!', ÆÚ´ý'&' 
-// PKTRECV -- ½ÓÊÕµ½'&', ¿ªÊ¼½ÓÊÕÊý¾Ý
-// PKTSTOP1 -- ½ÓÊÕµ½'!', ÆÚ´ý'#'ÒÔ½áÊøÊý¾ÝµÄ½ÓÊÕ
-// Èç¹û³É¹¦½ÓÊÕsendpkt_arg_t½á¹¹, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// è¿™ä¸ªå‡½æ•°ç”±SONè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯æŽ¥æ”¶æ•°æ®ç»“æž„sendpkt_arg_t.
+// æŠ¥æ–‡å’Œä¸‹ä¸€è·³çš„èŠ‚ç‚¹IDè¢«å°è£…è¿›sendpkt_arg_tç»“æž„.
+// å‚æ•°sip_connæ˜¯åœ¨SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦. 
+// sendpkt_arg_tç»“æž„é€šè¿‡SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#. 
+// ä¸ºäº†æŽ¥æ”¶æŠ¥æ–‡, è¿™ä¸ªå‡½æ•°ä½¿ç”¨ä¸€ä¸ªç®€å•çš„æœ‰é™çŠ¶æ€æœºFSM
+// PKTSTART1 -- èµ·ç‚¹ 
+// PKTSTART2 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'&' 
+// PKTRECV -- æŽ¥æ”¶åˆ°'&', å¼€å§‹æŽ¥æ”¶æ•°æ®
+// PKTSTOP1 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'#'ä»¥ç»“æŸæ•°æ®çš„æŽ¥æ”¶
+// å¦‚æžœæˆåŠŸæŽ¥æ”¶sendpkt_arg_tç»“æž„, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int getpktToSend(sip_pkt_t* pkt, int* nextNode,int sip_conn);
 
-// forwardpktToSIP()º¯ÊýÊÇÔÚSON½ø³Ì½ÓÊÕµ½À´×ÔÖØµþÍøÂçÖÐÆäÁÚ¾ÓµÄ±¨ÎÄºó±»µ÷ÓÃµÄ. 
-// SON½ø³Ìµ÷ÓÃÕâ¸öº¯Êý½«±¨ÎÄ×ª·¢¸øSIP½ø³Ì. 
-// ²ÎÊýsip_connÊÇSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û. 
-// ±¨ÎÄÍ¨¹ýSIP½ø³ÌºÍSON½ø³ÌÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#, °´ÕÕ'!& ±¨ÎÄ !#'µÄË³Ðò·¢ËÍ. 
-// Èç¹û±¨ÎÄ·¢ËÍ³É¹¦, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// forwardpktToSIP()å‡½æ•°æ˜¯åœ¨SONè¿›ç¨‹æŽ¥æ”¶åˆ°æ¥è‡ªé‡å ç½‘ç»œä¸­å…¶é‚»å±…çš„æŠ¥æ–‡åŽè¢«è°ƒç”¨çš„. 
+// SONè¿›ç¨‹è°ƒç”¨è¿™ä¸ªå‡½æ•°å°†æŠ¥æ–‡è½¬å‘ç»™SIPè¿›ç¨‹. 
+// å‚æ•°sip_connæ˜¯SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦. 
+// æŠ¥æ–‡é€šè¿‡SIPè¿›ç¨‹å’ŒSONè¿›ç¨‹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#, æŒ‰ç…§'!& æŠ¥æ–‡ !#'çš„é¡ºåºå‘é€. 
+// å¦‚æžœæŠ¥æ–‡å‘é€æˆåŠŸ, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int forwardpktToSIP(sip_pkt_t* pkt, int sip_conn);
 
-// sendpkt()º¯ÊýÓÉSON½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇ½«½ÓÊÕ×ÔSIP½ø³ÌµÄ±¨ÎÄ·¢ËÍ¸øÏÂÒ»Ìø.
-// ²ÎÊýconnÊÇµ½ÏÂÒ»Ìø½ÚµãµÄTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û.
-// ±¨ÎÄÍ¨¹ýSON½ø³ÌºÍÆäÁÚ¾Ó½ÚµãÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#, °´ÕÕ'!& ±¨ÎÄ !#'µÄË³Ðò·¢ËÍ. 
-// Èç¹û±¨ÎÄ·¢ËÍ³É¹¦, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// sendpkt()å‡½æ•°ç”±SONè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯å°†æŽ¥æ”¶è‡ªSIPè¿›ç¨‹çš„æŠ¥æ–‡å‘é€ç»™ä¸‹ä¸€è·³.
+// å‚æ•°connæ˜¯åˆ°ä¸‹ä¸€è·³èŠ‚ç‚¹çš„TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦.
+// æŠ¥æ–‡é€šè¿‡SONè¿›ç¨‹å’Œå…¶é‚»å±…èŠ‚ç‚¹ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#, æŒ‰ç…§'!& æŠ¥æ–‡ !#'çš„é¡ºåºå‘é€. 
+// å¦‚æžœæŠ¥æ–‡å‘é€æˆåŠŸ, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int sendpkt(sip_pkt_t* pkt, int conn);
 
-// recvpkt()º¯ÊýÓÉSON½ø³Ìµ÷ÓÃ, Æä×÷ÓÃÊÇ½ÓÊÕÀ´×ÔÖØµþÍøÂçÖÐÆäÁÚ¾ÓµÄ±¨ÎÄ.
-// ²ÎÊýconnÊÇµ½ÆäÁÚ¾ÓµÄTCPÁ¬½ÓµÄÌ×½Ó×ÖÃèÊö·û.
-// ±¨ÎÄÍ¨¹ýSON½ø³ÌºÍÆäÁÚ¾ÓÖ®¼äµÄTCPÁ¬½Ó·¢ËÍ, Ê¹ÓÃ·Ö¸ô·û!&ºÍ!#. 
-// ÎªÁË½ÓÊÕ±¨ÎÄ, Õâ¸öº¯ÊýÊ¹ÓÃÒ»¸ö¼òµ¥µÄÓÐÏÞ×´Ì¬»úFSM
-// PKTSTART1 -- Æðµã 
-// PKTSTART2 -- ½ÓÊÕµ½'!', ÆÚ´ý'&' 
-// PKTRECV -- ½ÓÊÕµ½'&', ¿ªÊ¼½ÓÊÕÊý¾Ý
-// PKTSTOP1 -- ½ÓÊÕµ½'!', ÆÚ´ý'#'ÒÔ½áÊøÊý¾ÝµÄ½ÓÊÕ 
-// Èç¹û³É¹¦½ÓÊÕ±¨ÎÄ, ·µ»Ø1, ·ñÔò·µ»Ø-1.
+// recvpkt()å‡½æ•°ç”±SONè¿›ç¨‹è°ƒç”¨, å…¶ä½œç”¨æ˜¯æŽ¥æ”¶æ¥è‡ªé‡å ç½‘ç»œä¸­å…¶é‚»å±…çš„æŠ¥æ–‡.
+// å‚æ•°connæ˜¯åˆ°å…¶é‚»å±…çš„TCPè¿žæŽ¥çš„å¥—æŽ¥å­—æè¿°ç¬¦.
+// æŠ¥æ–‡é€šè¿‡SONè¿›ç¨‹å’Œå…¶é‚»å±…ä¹‹é—´çš„TCPè¿žæŽ¥å‘é€, ä½¿ç”¨åˆ†éš”ç¬¦!&å’Œ!#. 
+// ä¸ºäº†æŽ¥æ”¶æŠ¥æ–‡, è¿™ä¸ªå‡½æ•°ä½¿ç”¨ä¸€ä¸ªç®€å•çš„æœ‰é™çŠ¶æ€æœºFSM
+// PKTSTART1 -- èµ·ç‚¹ 
+// PKTSTART2 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'&' 
+// PKTRECV -- æŽ¥æ”¶åˆ°'&', å¼€å§‹æŽ¥æ”¶æ•°æ®
+// PKTSTOP1 -- æŽ¥æ”¶åˆ°'!', æœŸå¾…'#'ä»¥ç»“æŸæ•°æ®çš„æŽ¥æ”¶ 
+// å¦‚æžœæˆåŠŸæŽ¥æ”¶æŠ¥æ–‡, è¿”å›ž1, å¦åˆ™è¿”å›ž-1.
 int recvpkt(sip_pkt_t* pkt, int conn);
 
 #endif

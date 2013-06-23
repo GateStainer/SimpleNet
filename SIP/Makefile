@@ -26,7 +26,7 @@ server/app_stress_server: server/app_stress_server.c common/seg.o server/stcp_se
 	gcc -Wall -pedantic -std=c99 -g -pthread server/app_stress_server.c common/seg.o server/stcp_server.o topology/topology.o -o server/app_stress_server
 common/seg.o: common/seg.c common/seg.h
 	gcc -Wall -pedantic -std=c99 -g -c common/seg.c -o common/seg.o
-client/stcp_client.o: client/srt_client.c client/stcp_client.h 
+client/stcp_client.o: client/stcp_client.c client/stcp_client.h 
 	gcc -Wall -pedantic -std=c99 -g -c client/stcp_client.c -o client/stcp_client.o
 server/stcp_server.o: server/stcp_server.c server/stcp_server.h
 	gcc -Wall -pedantic -std=c99 -g -c server/stcp_server.c -o server/stcp_server.o

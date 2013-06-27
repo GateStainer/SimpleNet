@@ -127,7 +127,6 @@ void* pkthandler(void* arg)
 				printf("receive ROUTE UPDATE MESSAGE FROM NODE %d\n", srcNode);
 				for(j = 0; j < routemsg->entryNum; j ++)
 					dvtable_setcost(dv, srcNode, routemsg->entry[j].nodeID, routemsg->entry[j].cost);
-				dvtable_print(dv);
 				for(i = 0;i < nbr_num + 1;i ++) {
 					if(myNodeID == dv[i].nodeID)
 						break;
@@ -288,6 +287,7 @@ int main(int argc, char *argv[])
 	printf("SIP layer is started...\n");
 	printf("waiting for routes to be established\n");
 	sleep(SIP_WAITTIME);
+	dvtable_print(dv);
 	routingtable_print(routingtable);
 
 	//等待来自STCP进程的连接

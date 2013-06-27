@@ -140,7 +140,6 @@ void* listen_to_neighbor(void* arg)
 			// sip start later than listen to, you can't break here!!!!!!!
 //			break; 
 		}
-//		forwardpktToSIP(&recvbuf, sip_conn);
 		printf("son: forward pkt from to SIP\n");
 	}
 	pthread_exit(NULL);
@@ -185,7 +184,7 @@ void waitSIP()
 			for(i = 0; i < nbrNum; i++){
 				if(sendpkt(&recvbuf, nt[i].conn) == -1){
 					printf("son: can't send pkt to neighbor %d \n", nt[i].nodeID);
-					printf("son: the connfd is %d \n", nt[i].conn);
+				//	printf("son: the connfd is %d \n", nt[i].conn);
 				}
 				else
 					printf("son send pkt to neighbor %d \n", nt[i].nodeID);

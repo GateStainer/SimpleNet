@@ -124,7 +124,7 @@ int stcp_client_send(int sockfd, void* data, unsigned int length)
 	while(tcb[sockfd]->state == CONNECTED){
 		pthread_mutex_lock(tcb[sockfd]->bufMutex);
 		segBuf_t *sendbuf = malloc(sizeof(segBuf_t));
-		memset(sendbuf, 0, sizeof(sendbuf));
+		memset(sendbuf, 0, sizeof(segBuf_t));
 		sendbuf->seg.header.src_port = tcb[sockfd]->client_portNum;
 		sendbuf->seg.header.dest_port = tcb[sockfd]->server_portNum;
 		sendbuf->seg.header.type = DATA;
@@ -171,7 +171,7 @@ int stcp_client_send(int sockfd, void* data, unsigned int length)
 			tcb[sockfd]->sendBufunSent = tcb[sockfd]->sendBufunSent->next;
 
 			tcb[sockfd]->unAck_segNum++;
-			printf("unAck_segNum: %d\n", tcb[sockfd]->unAck_segNum);
+//			printf("unAck_segNum: %d\n", tcb[sockfd]->unAck_segNum);
 		}
 		pthread_mutex_unlock(tcb[sockfd]->bufMutex);
 		if(flag == 1)
@@ -275,14 +275,14 @@ void* seghandler(void* arg)
 						pthread_mutex_lock(tcb[i]->bufMutex);
 						assert(tcb[i]->sendBufHead != NULL);
 						int num = tcb[i]->sendBufHead->seg.header.seq_num;
-						printf("unAck_segNum %d \n", tcb[i]->unAck_segNum);
+//						printf("unAck_segNum %d \n", tcb[i]->unAck_segNum);
 						while(num < ack){
 							segBuf_t *tmp = tcb[i]->sendBufHead;
 							tcb[i]->sendBufHead = tmp->next;
 							printf("delete seg %d \n", tmp->seg.header.seq_num);
 							free(tmp);
 							tcb[i]->unAck_segNum--;
-							printf("unAck_segNum -- %d\n", tcb[i]->unAck_segNum);
+//							printf("unAck_segNum -- %d\n", tcb[i]->unAck_segNum);
 							if(tcb[i]->sendBufHead != NULL)
 								num = tcb[i]->sendBufHead->seg.header.seq_num;
 							else
@@ -290,10 +290,11 @@ void* seghandler(void* arg)
 						}
 						while(tcb[i]->unAck_segNum < GBN_WINDOW && tcb[i]->sendBufunSent != NULL){
 							tcb[i]->sendBufunSent->sentTime = time(NULL);
+							printf("client send DATA %d \n", tcb[i]->sendBufunSent->seg.header.seq_num);
 							sip_sendseg(sip_conn, tcb[i]->server_nodeID,  &(tcb[i]->sendBufunSent->seg));
 							tcb[i]->sendBufunSent = tcb[i]->sendBufunSent->next;
 							tcb[i]->unAck_segNum++;
-							printf("unAck_segNum ++ %d\n", tcb[i]->unAck_segNum);
+//							printf("unAck_segNum ++ %d\n", tcb[i]->unAck_segNum);
 						}
 						pthread_mutex_unlock(tcb[i]->bufMutex);
 					}
@@ -308,7 +309,6 @@ void* seghandler(void* arg)
 			}
 		}
 		else if(n == -1){
-//			printf("SON is closed\n");
 			pthread_exit(NULL);
 		}
 	}
@@ -326,7 +326,6 @@ void* sendBuf_timer(void* clientfd)
 	free(clientfd);
 	client_tcb_t *tmp = tcb[sockfd];
 	printf("sendBuf_timer start running \n");
-//	while(tmp->state == CONNECTED){
 	while(1){
 		usleep(SENDBUF_POLLING_INTERVAL/1000);
 		pthread_mutex_lock(tmp->bufMutex);
@@ -336,13 +335,11 @@ void* sendBuf_timer(void* clientfd)
 			pthread_exit(NULL);
 		}
 		else if(time(NULL) - tmp->sendBufHead->sentTime > DATA_TIMEOUT) {
-//			printf("last sent time %ld\n", tmp->sendBufHead->sentTime);
 			segBuf_t *p = tmp->sendBufHead;
-			int un_ack = tmp->unAck_segNum;
-//			printf("sendBuf_timer unack %d \n", un_ack);
+			//int un_ack = tmp->unAck_segNum;
 			while(p != tmp->sendBufunSent){
 				p->sentTime = time(NULL);
-				printf("re send seg%d----------\n", p->seg.header.seq_num);
+				printf("RE SEND SEG%d----------\n", p->seg.header.seq_num);
 				sip_sendseg(sip_conn, tmp->server_nodeID,  &(p->seg));
 				p = p->next;
 			}

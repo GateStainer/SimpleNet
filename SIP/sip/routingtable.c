@@ -113,5 +113,5 @@ void routingtable_print(routingtable_t* routingtable)
 			temp = temp->next;
 		}
 	}
-	printf("----------end of routing table -------------\n");
+	printf("----------------end of routing table ----------------\n");
 }

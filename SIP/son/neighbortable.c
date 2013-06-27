@@ -56,7 +56,7 @@ int nt_addconnByIP(nbr_entry_t* nt, in_addr_t nodeIP, int conn)
 	int i = 0;
 	for(i = 0;i < nbrNum; i++){
 		if(nt[i].nodeIP == nodeIP){
-			printf("add negihbor %d sockfd %d \n", nt[i].nodeID, conn);
+		//	printf("add negihbor %d sockfd %d \n", nt[i].nodeID, conn);
 			nt[i].conn = conn;
 			return 1;
 		}

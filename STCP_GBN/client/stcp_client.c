@@ -292,6 +292,7 @@ void *seghandler(void* arg)
 						}
 						while(tcb[i]->unAck_segNum < GBN_WINDOW && tcb[i]->sendBufunSent != NULL){
 							tcb[i]->sendBufunSent->sentTime = time(NULL);
+							printf("client send DATA %d \n", tcb[i]->sendBufunSent->seg.header.seq_num);
 							sip_sendseg(sipfd, &(tcb[i]->sendBufunSent->seg));
 							tcb[i]->sendBufunSent = tcb[i]->sendBufunSent->next;
 							tcb[i]->unAck_segNum++;
@@ -343,7 +344,7 @@ void* sendBuf_timer(void* clienttcb)
 //			printf("sendBuf_timer unack %d \n", un_ack);
 			while(p != tmp->sendBufunSent){
 				p->sentTime = time(NULL);
-				printf("re send seg%d----------\n", p->seg.header.seq_num);
+				printf("RE SEND SEG%d----------\n", p->seg.header.seq_num);
 				sip_sendseg(sipfd, &(p->seg));
 				p = p->next;
 			}

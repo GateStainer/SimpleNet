@@ -110,7 +110,7 @@ void dvtable_print(dv_t* dvtable)
 	int nbr_num = topology_getNbrNum();
 	int node_num = topology_getNodeNum();
 
-//	printf("\tcsnetlab_1\tcsnetlab_2\tcsnetlab_3\tcsnetlab4\n");
+	printf("=============distance table===========\n");
 	int i = 0, j = 0;
 	for(j = 0; j < node_num; j++)
 		printf("\t%d", dvtable[0].dvEntry[j].nodeID);
@@ -121,5 +121,6 @@ void dvtable_print(dv_t* dvtable)
 			printf("\t%d", dvtable[i].dvEntry[j].cost);
 		printf("\n");
 	}
+	printf("=============distance table===========\n");
 	return;
 }

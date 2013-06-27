@@ -200,8 +200,6 @@ int recvpkt(sip_pkt_t* pkt, int conn)
 	char *recvbuf = (char *)pkt;
 	int i = 0, n;
 
-	printf("before recvpkt \n");
-	printf("conn : %d \n", conn);
 	while( (n = recv(conn, &buf, 1, 0)) > 0){
 		switch(state){
 			case PKTSTART1:
@@ -236,7 +234,6 @@ int recvpkt(sip_pkt_t* pkt, int conn)
 			break;
 	}
 	
-	printf("after recvpkt \n");
 	if(n <= 0)
 		return -1;
 	return 1;

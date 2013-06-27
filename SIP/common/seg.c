@@ -177,12 +177,12 @@ int seglost(seg_t* segPtr)
 	if(random<PKT_LOSS_RATE*100) {
 		//50%可能性丢失段
 		if(rand()%2==0) {
-			printf("seg lost!!!\n");
+			printf("!!!!!!!!!!!seg lost!!!!!!!!\n");
 			return 1;
 		}
 		//50%可能性是错误的校验和
 		else {
-			printf("wrong checksum\n");
+			printf("!!!!!!!!!!wrong checksum!!!!!!!!!!!!\n");
 			//获取数据长度
 			int len = sizeof(stcp_hdr_t)+segPtr->header.length;
 			//获取要反转的随机位

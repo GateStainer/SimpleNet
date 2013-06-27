@@ -72,8 +72,8 @@ void* waitNbrs(void* arg)
 		connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
 		if(connfd == -1)
 			printf("error when neighbor connect\n");
-		else
-			printf("waitNbrs : %d \n", connfd);
+//		else
+//			printf("waitNbrs : %d \n", connfd);
 		in_addr_t client_ip = cliaddr.sin_addr.s_addr;
 		if(nt_addconnByIP(nt, client_ip, connfd) == -1)
 			printf("can't add connByIP \n");
@@ -129,7 +129,6 @@ void* listen_to_neighbor(void* arg)
 	//when to exit?
 	while(1){
 		sip_pkt_t recvbuf;
-		printf("listen_to_neighbor %d here\n", nt[i].nodeID);
 		if(recvpkt(&recvbuf, connfd) == -1){
 			printf("son: failed to recv pkt from neighbor %d\n", nt[i].nodeID);
 			break;

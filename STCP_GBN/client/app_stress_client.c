@@ -29,7 +29,7 @@
 #define SERVERPORT1 88
 
 //在发送文件后, 等待5秒, 然后关闭连接.
-#define WAITTIME 25
+#define WAITTIME 5
 
 //这个函数通过在客户和服务器之间创建TCP连接来启动重叠网络层. 它返回TCP套接字描述符, STCP将使用该描述符发送段. 如果TCP连接失败, 返回-1. 
 char server_ip[30];
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 	
 	//获取sendthis.txt文件长度, 创建缓冲区并读取文件中的数据.
 	FILE *f;
-	f = fopen("Oliver Twist.txt","r");
+	f = fopen("sendthis.txt","r");
 	assert(f != NULL);
 	fseek(f,0,SEEK_END);
 	int fileLen = ftell(f);

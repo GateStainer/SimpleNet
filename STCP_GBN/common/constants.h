@@ -8,14 +8,14 @@
 #define CONSTANTS_H
 
 //服务器打开的重叠网络层端口号. 客户端将连接到这个端口. 你应该选择一个随机的端口以避免和其他同学发生冲突.
-#define SON_PORT 9042
+#define SON_PORT 16842
 //这是STCP可以支持的最大连接数. 你的TCB表应包含MAX_TRANSPORT_CONNECTIONS个条目.
 #define MAX_TRANSPORT_CONNECTIONS 10
 //最大段长度
 //MAX_SEG_LEN = 1500 - sizeof(stcp header) - sizeof(sip header)
 #define MAX_SEG_LEN  1464
 //数据包丢失率为10%
-#define PKT_LOSS_RATE 0.01
+#define PKT_LOSS_RATE 0.1
 //SYN_TIMEOUT值, 单位为纳秒
 #define SYN_TIMEOUT 100000000
 //FIN_TIMEOUT值, 单位为纳秒

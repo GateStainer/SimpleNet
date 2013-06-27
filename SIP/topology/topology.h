@@ -6,7 +6,6 @@
 
 #ifndef TOPOLOGY_H 
 #define TOPOLOGY_H
-#define _BSD_SOURCE
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

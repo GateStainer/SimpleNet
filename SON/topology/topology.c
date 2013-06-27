@@ -113,7 +113,8 @@ unsigned int topology_getCost(int fromNodeID, int toNodeID)
 	while(fscanf(pFile,"%s %s %d", host1, host2, &cost) > 0){
 		host1ID = topology_getNodeIDfromname(host1);
 		host2ID = topology_getNodeIDfromname(host2);
-		if(host1ID == fromNodeID && host2ID == toNodeID)
+		if((host1ID == fromNodeID && host2ID == toNodeID)||
+				(host1ID == toNodeID && host2ID == fromNodeID))
 			return cost;
 	}
 

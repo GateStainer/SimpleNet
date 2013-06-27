@@ -74,7 +74,7 @@ int stcp_server_accept(int sockfd)
 	tcb[sockfd]->state = LISTENING;
 	while(tcb[sockfd]->state != CONNECTED)
 		usleep(ACCEPT_POLLING_INTERVAL / 1000);
-	printf("accept success, connection established\n");
+	printf("stcp accept success, connection established\n");
 	return 1;
 }
 
@@ -209,7 +209,7 @@ void* seghandler(void* arg)
 									sendbuf.header.dest_port = tcb[i]->client_portNum;
 									sendbuf.header.ack_num = tcb[i]->expect_seqNum;
 									sendbuf.header.type = DATAACK;
-									printf("server port  %d recv DATA %d send DATAACK %d\n",
+									printf("server port  %d recv WRONG DATA %d send DATAACK %d\n",
 											tcb[i]->server_portNum, recvbuf.header.seq_num,
 											sendbuf.header.ack_num);
 									sip_sendseg(sipfd, tcb[i]->client_nodeID, &sendbuf);

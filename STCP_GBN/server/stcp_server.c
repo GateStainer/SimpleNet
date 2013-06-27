@@ -159,7 +159,7 @@ void* seghandler(void* arg)
 						case CLOSED:
 							break;
 						case LISTENING:
-							printf("server listening\n");
+							printf("STCP SERVER LISTENING\n");
 							if(recvbuf.header.type == SYN){
 								tcb[i]->client_portNum = recvbuf.header.src_port;
 								tcb[i]->state = CONNECTED;
@@ -235,7 +235,7 @@ void* seghandler(void* arg)
 
 							break;
 						case CLOSEWAIT:
-							printf("server closewait\n");
+							printf("SERVER closewait\n");
 							if(recvbuf.header.type == FIN){
 								memset(&sendbuf, 0, sizeof(sendbuf));
 								sendbuf.header.src_port = tcb[i]->server_portNum;

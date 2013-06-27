@@ -67,8 +67,10 @@ void* routeupdate_daemon(void* arg)
 		sendbuf.header.dest_nodeID = BROADCAST_NODEID;
 		sendbuf.header.src_nodeID = topology_getMyNodeID();
 		sendbuf.header.length = 0;
-		if(son_sendpkt(BROADCAST_NODEID, &sendbuf, son_conn) == -1)
+		if(son_sendpkt(BROADCAST_NODEID, &sendbuf, son_conn) == -1){
+			printf("sip: son_sendpkt failed!!!!!!!!!!!!!!!!!!!!!!!!\n");
 			break;
+		}
 	}
 	pthread_exit(NULL);
 }
@@ -83,8 +85,8 @@ void* pkthandler(void* arg)
 	while(son_recvpkt(&pkt,son_conn)>0) {
 		printf("Routing: received a packet from neighbor %d\n",pkt.header.src_nodeID);
 	}
-	close(son_conn);
-	son_conn = -1;
+//	close(son_conn);
+//	son_conn = -1;
 	pthread_exit(NULL);
 }
 

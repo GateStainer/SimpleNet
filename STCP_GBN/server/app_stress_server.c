@@ -33,6 +33,9 @@ int son_start()
 		return -1;
 	}
 
+	int opt = 1;
+	setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	clilen = sizeof(cliaddr);
 	memset(&servaddr,0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);

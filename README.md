@@ -1,2 +1,1 @@
-A DartNet implemented by a nju cser  
-Course URL http://www.cs.dartmouth.edu/~campbell/cs60/
+Implement a virtual network, transport layer of TCP/IP via socket programming.
